@@ -26,9 +26,9 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="font-bold text-sm sm:text-base text-white">Civic 2007 1.8 Manual</h1>
-          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v3.0 • R18A1</span>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v3.1 • R18A1</span>
         </div>
-        <p id="headerSubStatus" class="text-[11px] text-slate-400">Gasolina RS E32/E30 • Somente Leitura</p>
+        <p id="headerSubStatus" class="text-[11px] text-slate-400">Gasolina RS E32/E30 • Abastecimentos &amp; Odômetro</p>
       </div>
       <div class="flex items-center gap-1.5">
         <button id="btnInstallApp" class="hidden px-2.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲 Instalar</button>
@@ -56,12 +56,15 @@
             <h2 class="text-sm font-bold text-white">Conexão OBD-II (Bluetooth SPP)</h2>
             <p class="text-[11px] text-slate-400">Conecta automaticamente e mantém a tela acesa ao dirigir.</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <button id="btnConnectSerial" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
               🔌 Conectar OBDII
             </button>
             <button id="btnToggleLive" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold">
               ▶ Ao Vivo
+            </button>
+            <button id="btnQuickRefuel" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
+              ⛽ Abastecer
             </button>
           </div>
         </div>
@@ -273,6 +276,83 @@
 
     <!-- ================= ABA 4: CUSTOS, HISTÓRICO & DRIVE ================= -->
     <div id="tab-history" class="tab-pane hidden space-y-3">
+      <!-- Novo Abastecimento & Odômetro Inteligente -->
+      <section id="refuelSection" class="card p-3.5 space-y-3 border-amber-500/40">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold text-amber-300">⛽ Registrar Abastecimento &amp; Odômetro</h2>
+            <p class="text-[11px] text-slate-400">Lê o odômetro via ECU (0131) ou pergunta o valor do painel caso o carro esteja desligado.</p>
+          </div>
+          <button id="btnReadOdoEcu" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+            🔍 Ler Odômetro na ECU
+          </button>
+        </div>
+
+        <!-- Caixa de Pergunta Automática quando não consegue ler da ECU -->
+        <div id="odoPromptBox" class="hidden rounded-xl p-3 bg-amber-500/15 border border-amber-500/50 text-xs text-amber-100 space-y-2">
+          <div id="odoPromptMessage" class="font-semibold">
+            ⚠️ Não foi possível ler o odômetro direto da ECU agora (carro desligado na bomba ou 1ª sincronização). Qual a quilometragem atual no painel do Civic?
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnUseSuggestedOdo" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+              ✅ Usar Estimado
+            </button>
+            <span class="text-[11px] text-amber-200">Digite ou confirme no campo <b>Odômetro Atual (km)</b> abaixo:</span>
+          </div>
+        </div>
+
+        <div id="odoSourceStatus" class="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+          📍 Status do Odômetro: Toque em <b>🔍 Ler Odômetro na ECU</b> ou digite o valor do painel abaixo.
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelOdoInput" class="text-[10px] text-amber-300 uppercase font-bold block">Odômetro Atual (km)</label>
+            <input id="refuelOdoInput" type="number" step="1" placeholder="Ex: 185420" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
+            <span id="refuelDeltaHint" class="text-[10px] text-slate-400 block mt-0.5">Painel do Civic</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelPriceInput" class="text-[10px] text-slate-400 uppercase font-bold block">Valor Combustível (R$/L)</label>
+            <input id="refuelPriceInput" type="number" step="0.01" value="6.15" class="w-full mt-1 bg-transparent text-emerald-300 text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Preço na bomba</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelLitersInput" class="text-[10px] text-cyan-300 uppercase font-bold block">Litros no Tanque (L)</label>
+            <input id="refuelLitersInput" type="number" step="0.01" placeholder="Ex: 38.50" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Quantidade abastecida</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelTotalInput" class="text-[10px] text-purple-300 uppercase font-bold block">Total Pago (R$)</label>
+            <input id="refuelTotalInput" type="number" step="0.01" placeholder="Auto R$" class="w-full mt-1 bg-transparent text-purple-300 text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Calcula litros/total sozinho</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input id="refuelFullTankCheck" type="checkbox" checked class="w-4 h-4 accent-emerald-500 rounded" />
+            <span>Tanque cheio (calcular média real km/L e calibrar o app automaticamente)</span>
+          </label>
+          <button id="btnSaveRefuel" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
+            💾 Registrar Abastecimento
+          </button>
+        </div>
+
+        <!-- Painel de Resumo de Abastecimentos e Média Real -->
+        <div id="refuelSummaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mono pt-1"></div>
+
+        <!-- Histórico de Abastecimentos -->
+        <div class="space-y-2 pt-1">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase text-slate-400">Histórico de Abastecimentos &amp; Médias de Tanque</h3>
+            <button id="btnExportRefuelsCsv" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-semibold">
+              📊 Exportar Postos CSV
+            </button>
+          </div>
+          <div id="refuelsList" class="space-y-2 text-xs"></div>
+        </div>
+      </section>
+
       <section class="card p-3.5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -341,6 +421,7 @@
   <script>
     const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
     const STORAGE_KEY = 'civic2007_obd_sessions_v2';
+    const REFUELS_KEY = 'civic2007_refuels_v1';
 
     // Misturas de Gasolina no Brasil / RS (AFR estequiométrico e densidade g/L)
     const FUEL_BLENDS = {
@@ -361,6 +442,11 @@
       gps: null,
       gpsWatchId: null,
       sessions: [],
+      refuels: [],
+      odoOffset: null,
+      lastEcu0131Km: null,
+      lastKnownOdoKm: null,
+      fuelCalibFactor: 1.0,
       currentSessionId: null,
       activeManualRouteId: null,
       wasEngineRunning: false,
@@ -376,7 +462,7 @@
         lambdaReal: 0, wbMa: 0, afr: 0, lambdaCmd: 0, lambdaDiff: 0,
         stft: 0, fuelSys: '--', timing: 0, load: 0, absLoad: 0,
         map: 0, vePct: 0, tps: 0, pedal: 0, coolant: 0, iat: 0,
-        ecuVolt: 0, o2v: 0, baro: 0, egr: 0, evap: 0
+        ecuVolt: 0, o2v: 0, baro: 0, egr: 0, evap: 0, ecuDist0131: null
       }
     };
 
@@ -518,8 +604,28 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         appState.sessions = raw ? JSON.parse(raw) : [];
       } catch { appState.sessions = []; }
+      try {
+        const rawRef = localStorage.getItem(REFUELS_KEY);
+        appState.refuels = rawRef ? JSON.parse(rawRef) : [];
+      } catch { appState.refuels = []; }
+
+      const savedOffset = localStorage.getItem('civic2007_odo_offset');
+      if (savedOffset !== null && !isNaN(parseFloat(savedOffset))) appState.odoOffset = parseFloat(savedOffset);
+
+      const saved0131 = localStorage.getItem('civic2007_last_0131_km');
+      if (saved0131 !== null && !isNaN(parseFloat(saved0131))) appState.lastEcu0131Km = parseFloat(saved0131);
+
+      const savedKnownOdo = localStorage.getItem('civic2007_last_known_odo');
+      if (savedKnownOdo !== null && !isNaN(parseFloat(savedKnownOdo))) appState.lastKnownOdoKm = parseFloat(savedKnownOdo);
+
+      const savedCalib = localStorage.getItem('civic2007_fuel_calib');
+      if (savedCalib !== null && !isNaN(parseFloat(savedCalib))) appState.fuelCalibFactor = Math.min(1.3, Math.max(0.75, parseFloat(savedCalib)));
+
       const savedPrice = localStorage.getItem('civic2007_fuel_price');
-      if (savedPrice) document.getElementById('fuelPriceInput').value = savedPrice;
+      if (savedPrice) {
+        document.getElementById('fuelPriceInput').value = savedPrice;
+        if (document.getElementById('refuelPriceInput')) document.getElementById('refuelPriceInput').value = savedPrice;
+      }
       const savedBlend = localStorage.getItem('civic2007_fuel_blend');
       if (savedBlend) document.getElementById('fuelBlendSelect').value = savedBlend;
       renderAllSessionViews();
@@ -530,11 +636,315 @@
       renderAllSessionViews();
     }
 
+    function saveRefuels() {
+      try { localStorage.setItem(REFUELS_KEY, JSON.stringify(appState.refuels)); } catch {}
+      renderAllSessionViews();
+    }
+
     function renderAllSessionViews() {
       renderSessions();
       renderPeriodSummaries();
       populateCompareSelects();
       renderRouteGroupStats();
+      renderRefuelViews();
+    }
+
+    // Calcula quilômetros rodados nas viagens desde uma data ISO (ou desde o último abastecimento)
+    function calcSessionsSince(isoDate) {
+      const minTs = isoDate ? new Date(isoDate).getTime() : 0;
+      let km = 0, liters = 0;
+      for (const s of appState.sessions) {
+        if (new Date(s.startedAt).getTime() >= minTs && s.rows?.length > 1) {
+          const sum = summarizeSession(s);
+          km += sum.distKm;
+          liters += sum.liters;
+        }
+      }
+      return { km, liters };
+    }
+
+    // Retorna o odômetro estimado atual combinando ECU (0131 + offset) ou Último Abastecimento + Viagens
+    function getEstimatedCurrentOdometer() {
+      const lastRef = appState.refuels[0] || null;
+      const sinceLast = calcSessionsSince(lastRef?.ts || null);
+      let estFromRefuel = lastRef?.odoKm ? Math.round(lastRef.odoKm + sinceLast.km) : null;
+      let estFromEcu = (appState.lastEcu0131Km !== null && appState.odoOffset !== null)
+        ? Math.round(appState.lastEcu0131Km + appState.odoOffset)
+        : null;
+      if (estFromEcu && estFromRefuel) return Math.max(estFromEcu, estFromRefuel);
+      return estFromEcu || estFromRefuel || (appState.lastKnownOdoKm ? Math.round(appState.lastKnownOdoKm) : null);
+    }
+
+    // Atualiza dica de km rodados ao digitar o odômetro no formulário de abastecimento
+    function updateRefuelDeltaPreview() {
+      const odoVal = parseFloat(document.getElementById('refuelOdoInput')?.value || '');
+      const litersVal = parseFloat(document.getElementById('refuelLitersInput')?.value || '');
+      const hintEl = document.getElementById('refuelDeltaHint');
+      if (!hintEl) return;
+      const lastRef = appState.refuels[0] || null;
+      if (!lastRef || !odoVal || odoVal <= lastRef.odoKm) {
+        hintEl.textContent = lastRef ? `Último posto: ${lastRef.odoKm} km` : '1º registro de odômetro';
+        hintEl.className = 'text-[10px] text-slate-400 block mt-0.5';
+        return;
+      }
+      const delta = +(odoVal - lastRef.odoKm).toFixed(1);
+      const previewKml = litersVal > 0 ? ` • ${(delta / litersVal).toFixed(2)} km/L` : '';
+      hintEl.textContent = `+${delta} km rodados${previewKml}`;
+      hintEl.className = 'text-[10px] text-emerald-300 font-bold block mt-0.5';
+    }
+
+    // Tenta ler o odômetro da ECU (0131) ou pergunta ao usuário caso o carro esteja desligado
+    async function readOdometerForRefuel() {
+      const statusEl = document.getElementById('odoSourceStatus');
+      const promptBox = document.getElementById('odoPromptBox');
+      const promptMsg = document.getElementById('odoPromptMessage');
+      const btnSuggested = document.getElementById('btnUseSuggestedOdo');
+      const odoInput = document.getElementById('refuelOdoInput');
+
+      if (statusEl) statusEl.innerHTML = '⏳ Consultando odômetro na ECU do Civic (PID 0131)...';
+
+      let ecuKm = null;
+      if (appState.mode === 'SERIAL' && appState.serialPort) {
+        const wasLive = appState.liveRunning;
+        appState.diagBusy = true;
+        await new Promise((r) => setTimeout(r, 200));
+        try {
+          const b31 = extractHexBytes(await sendObdCommand('0131 1', 2200), ['41', '31']);
+          if (b31 && b31.length >= 2) {
+            ecuKm = 256 * b31[0] + b31[1];
+            appState.lastEcu0131Km = ecuKm;
+            appState.lastMetrics.ecuDist0131 = ecuKm;
+            localStorage.setItem('civic2007_last_0131_km', String(ecuKm));
+          }
+        } catch {}
+        appState.diagBusy = false;
+        if (wasLive && !appState.liveRunning) startLiveMonitoring();
+      }
+
+      // Caso 1: Leu da ECU agora e já tem o offset do painel sincronizado
+      if (ecuKm !== null && appState.odoOffset !== null) {
+        const realOdo = Math.round(ecuKm + appState.odoOffset);
+        odoInput.value = realOdo;
+        promptBox.classList.add('hidden');
+        statusEl.innerHTML = `✅ <b>Odômetro lido da ECU automaticamente: ${realOdo} km</b> (Contador ECU 0131: ${ecuKm} km).`;
+        statusEl.className = 'text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2';
+        updateRefuelDeltaPreview();
+        showToast(`Odômetro lido da ECU: ${realOdo} km`);
+        return;
+      }
+
+      // Caso 2: Leu da ECU agora, mas é a 1ª vez (precisa perguntar o odômetro do painel para vincular)
+      if (ecuKm !== null && appState.odoOffset === null) {
+        promptBox.classList.remove('hidden');
+        btnSuggested.classList.add('hidden');
+        promptMsg.innerHTML = `🔵 <b>ECU conectada (Contador 0131 = ${ecuKm} km)!</b> Como é o 1º sincronismo, qual o valor exato que aparece no painel do Civic agora? (Nos próximos abastecimentos o app lerá sozinho!)`;
+        statusEl.innerHTML = `🔵 ECU respondeu <b>${ecuKm} km</b> no PID 0131. Digite o odômetro do painel abaixo para vincular.`;
+        statusEl.className = 'text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded-xl px-3 py-2';
+        odoInput.focus();
+        return;
+      }
+
+      // Caso 3: Carro desligado na bomba / desconectado -> Pergunta ao usuário e sugere a estimativa
+      const estimated = getEstimatedCurrentOdometer();
+      promptBox.classList.remove('hidden');
+      if (estimated) {
+        if (!odoInput.value) odoInput.value = estimated;
+        btnSuggested.textContent = `✅ Confirmar ${estimated} km`;
+        btnSuggested.classList.remove('hidden');
+        btnSuggested.onclick = () => {
+          odoInput.value = estimated;
+          promptBox.classList.add('hidden');
+          updateRefuelDeltaPreview();
+          showToast(`Odômetro confirmado: ${estimated} km`);
+        };
+        promptMsg.innerHTML = `⚠️ <b>Carro desligado ou sem leitura da ECU agora.</b> Pelas viagens gravadas, o odômetro estimado é <b>${estimated} km</b>. Confirme ou digite o valor exato do painel do seu Civic:`;
+        statusEl.innerHTML = `🟡 Sem leitura ao vivo da ECU. Sugerido pelo histórico: <b>${estimated} km</b> (confirme ou edite abaixo).`;
+      } else {
+        btnSuggested.classList.add('hidden');
+        promptMsg.innerHTML = `⚠️ <b>Não foi possível pegar o valor do odômetro na ECU agora (carro desligado/desconectado).</b> Qual o valor atual do odômetro no painel do Civic? Digite no campo abaixo para registrar:`;
+        statusEl.innerHTML = `🟡 Aguardando você informar o odômetro do painel abaixo.`;
+      }
+      statusEl.className = 'text-[11px] text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2';
+      updateRefuelDeltaPreview();
+      odoInput.focus();
+    }
+
+    function renderRefuelViews() {
+      const grid = document.getElementById('refuelSummaryGrid');
+      const list = document.getElementById('refuelsList');
+      if (!grid || !list) return;
+
+      const lastRef = appState.refuels[0] || null;
+      const sinceLast = calcSessionsSince(lastRef?.ts || null);
+      const estOdo = getEstimatedCurrentOdometer();
+
+      // Calcula médias globais de bomba
+      let totalLiters = 0, totalSpent = 0, validDeltaKm = 0, validPumpLiters = 0;
+      for (const r of appState.refuels) {
+        totalLiters += r.liters || 0;
+        totalSpent += r.totalCost || 0;
+        if (r.deltaKm > 0 && r.liters > 0 && r.fullTank) {
+          validDeltaKm += r.deltaKm;
+          validPumpLiters += r.liters;
+        }
+      }
+      const avgPumpKml = validPumpLiters > 0 ? (validDeltaKm / validPumpLiters) : (lastRef?.pumpKml || 0);
+      const avgCostPerKm = validDeltaKm > 0 ? (totalSpent / validDeltaKm) : (lastRef?.costPerKm || 0);
+
+      grid.innerHTML = `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[10px] text-slate-400 block">Odômetro &amp; Rodagem Atual</span>
+          <span class="text-sm font-extrabold text-white">${estOdo ? estOdo.toLocaleString('pt-BR') + ' km' : 'Sem registro'}</span>
+          <span class="text-[10px] text-cyan-300 block">Desde último posto: +${sinceLast.km.toFixed(1)} km</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[10px] text-slate-400 block">Média Real na Bomba</span>
+          <span class="text-sm font-extrabold text-emerald-400">${avgPumpKml > 0 ? avgPumpKml.toFixed(2) + ' km/L' : '-- km/L'}</span>
+          <span class="text-[10px] text-slate-400 block">Último tanque: ${lastRef?.pumpKml ? lastRef.pumpKml.toFixed(2) + ' km/L' : '--'}</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[10px] text-slate-400 block">Total Abastecido (${appState.refuels.length}x)</span>
+          <span class="text-sm font-extrabold text-amber-300">R$ ${totalSpent.toFixed(2)}</span>
+          <span class="text-[10px] text-slate-400 block">${totalLiters.toFixed(1)} L • ${avgCostPerKm > 0 ? 'R$ ' + avgCostPerKm.toFixed(2) + '/km' : '--'}</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[10px] text-slate-400 block">Calibração Bomba/OBD</span>
+          <span class="text-sm font-extrabold text-purple-300">Fator ${(appState.fuelCalibFactor * 100).toFixed(0)}%</span>
+          <span class="text-[10px] text-slate-400 block">${appState.odoOffset !== null ? 'ECU 0131 Sincronizada' : 'Aguardando 1º posto'}</span>
+        </div>
+      `;
+
+      updateRefuelDeltaPreview();
+
+      if (!appState.refuels.length) {
+        list.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhum abastecimento registrado ainda. No próximo posto, preencha o valor, os litros e o odômetro acima!</div>';
+        return;
+      }
+
+      list.innerHTML = appState.refuels.map((r) => `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
+              <span>⛽ ${r.label}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 mono">Odômetro: ${r.odoKm.toLocaleString('pt-BR')} km</span>
+              ${r.deltaKm ? `<span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">+${r.deltaKm} km rodados</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">1º Marco de Odômetro</span>'}
+            </div>
+            <div class="mono text-[11px] text-slate-300 mt-1">
+              <b>${r.liters.toFixed(2)} L</b> × R$ ${r.pricePerLiter.toFixed(2)}/L = <b class="text-amber-300">R$ ${r.totalCost.toFixed(2)}</b>
+              • Média Bomba: <b class="text-emerald-400">${r.pumpKml ? r.pumpKml.toFixed(2) + ' km/L' : 'Aguardando próx.'}</b>
+              ${r.costPerKm ? ` • Custo: <b>R$ ${r.costPerKm.toFixed(2)}/km</b>` : ''}
+              ${r.obdKml ? ` • (Scanner mediu ${r.obdKml.toFixed(1)} km/L)` : ''}
+            </div>
+          </div>
+          <button onclick="deleteRefuel('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    window.deleteRefuel = (id) => {
+      appState.refuels = appState.refuels.filter((x) => x.id !== id);
+      saveRefuels();
+      showToast('Registro de abastecimento removido.');
+    };
+
+    function saveRefuelRecord() {
+      const odoInput = document.getElementById('refuelOdoInput');
+      const priceInput = document.getElementById('refuelPriceInput');
+      const litersInput = document.getElementById('refuelLitersInput');
+      const totalInput = document.getElementById('refuelTotalInput');
+      const fullTank = document.getElementById('refuelFullTankCheck')?.checked ?? true;
+
+      let odoKm = parseFloat(odoInput.value);
+      const pricePerLiter = parseFloat(priceInput.value);
+      let liters = parseFloat(litersInput.value);
+      let totalCost = parseFloat(totalInput.value);
+
+      // Se o usuário não preencheu o odômetro e o app não conseguiu ler da ECU, faz a pergunta agora
+      if (!odoKm || odoKm <= 0) {
+        readOdometerForRefuel();
+        return showToast('Informe ou confirme o valor atual do odômetro no campo destacado!');
+      }
+      if (!pricePerLiter || pricePerLiter <= 0) {
+        priceInput.focus();
+        return showToast('Informe o valor do litro de combustível (R$/L).');
+      }
+      if ((!liters || liters <= 0) && totalCost > 0) {
+        liters = +(totalCost / pricePerLiter).toFixed(2);
+        litersInput.value = liters;
+      }
+      if ((!totalCost || totalCost <= 0) && liters > 0) {
+        totalCost = +(liters * pricePerLiter).toFixed(2);
+        totalInput.value = totalCost;
+      }
+      if (!liters || liters <= 0) {
+        litersInput.focus();
+        return showToast('Informe quantos litros foram colocados no tanque (ou o valor total R$).');
+      }
+
+      const prev = appState.refuels[0] || null;
+      if (prev && odoKm < prev.odoKm) {
+        return showToast(`O odômetro atual (${odoKm} km) não pode ser menor que o último posto (${prev.odoKm} km).`);
+      }
+
+      const now = new Date();
+      const deltaKm = prev && odoKm > prev.odoKm ? +(odoKm - prev.odoKm).toFixed(1) : null;
+      const pumpKml = deltaKm && liters > 0 ? +(deltaKm / liters).toFixed(2) : null;
+      const costPerKm = deltaKm && totalCost > 0 ? +(totalCost / deltaKm).toFixed(2) : null;
+
+      // Compara com o que o OBD gravou desde o último abastecimento para melhorar o app automaticamente
+      let obdKml = null;
+      if (prev) {
+        const obdSince = calcSessionsSince(prev.ts);
+        if (obdSince.liters > 0.2 && obdSince.km > 2) {
+          obdKml = +(obdSince.km / obdSince.liters).toFixed(2);
+          if (fullTank && obdSince.liters > 2 && liters > 2) {
+            const ratio = Math.min(1.25, Math.max(0.75, liters / obdSince.liters));
+            appState.fuelCalibFactor = +(0.7 * appState.fuelCalibFactor + 0.3 * ratio).toFixed(3);
+            localStorage.setItem('civic2007_fuel_calib', String(appState.fuelCalibFactor));
+          }
+        }
+      }
+
+      // Salva vínculo do odômetro do painel com o contador 0131 da ECU
+      appState.lastKnownOdoKm = odoKm;
+      localStorage.setItem('civic2007_last_known_odo', String(odoKm));
+      if (appState.lastEcu0131Km !== null) {
+        appState.odoOffset = Math.round(odoKm - appState.lastEcu0131Km);
+        localStorage.setItem('civic2007_odo_offset', String(appState.odoOffset));
+      }
+
+      // Sincroniza preço global do combustível no app
+      document.getElementById('fuelPriceInput').value = pricePerLiter.toFixed(2);
+      localStorage.setItem('civic2007_fuel_price', pricePerLiter.toFixed(2));
+
+      const rec = {
+        id: 'ref_' + now.getTime(),
+        ts: now.toISOString(),
+        label: now.toLocaleString('pt-BR'),
+        odoKm,
+        deltaKm,
+        liters,
+        pricePerLiter,
+        totalCost,
+        fullTank,
+        pumpKml,
+        costPerKm,
+        obdKml,
+        ecu0131Km: appState.lastEcu0131Km
+      };
+
+      appState.refuels.unshift(rec);
+      saveRefuels();
+
+      litersInput.value = '';
+      totalInput.value = '';
+      document.getElementById('odoPromptBox').classList.add('hidden');
+      const statusEl = document.getElementById('odoSourceStatus');
+      if (statusEl) {
+        statusEl.innerHTML = `✅ Abastecimento registrado em <b>${odoKm.toLocaleString('pt-BR')} km</b>! ${pumpKml ? `Média real do tanque: <b>${pumpKml.toFixed(2)} km/L</b> (+${deltaKm} km rodados).` : '1º marco de odômetro salvo — no próximo abastecimento já teremos a média exata!'} `;
+        statusEl.className = 'text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-3 py-2';
+      }
+      showToast(pumpKml ? `Salvo! Rodou +${deltaKm} km • Média: ${pumpKml} km/L` : `1º Abastecimento salvo (${odoKm} km)!`);
     }
 
     function startNewSession(reason, routeTag = '', routeType = '') {
@@ -989,9 +1399,10 @@
         m.gear = estimateManualGear(m.rpm, m.speed);
 
         const blend = getFuelBlend();
+        const calib = appState.fuelCalibFactor || 1.0;
         if (rMaf?.length >= 2) {
           m.maf = +((256 * rMaf[0] + rMaf[1]) / 100).toFixed(2);
-          m.fuelLh = +(m.maf * (3600 / (blend.afr * blend.density))).toFixed(2);
+          m.fuelLh = +(m.maf * (3600 / (blend.afr * blend.density)) * calib).toFixed(2);
           m.fuelKml = m.fuelLh > 0 && m.speed > 2 ? +(m.speed / m.fuelLh).toFixed(1) : 0;
         }
         if (rLamR?.length >= 2) {
@@ -1018,6 +1429,7 @@
           const rBaro = extractHexBytes(await sendObdCommand('0133 1', 1800), ['41', '33']);
           const rEgr = extractHexBytes(await sendObdCommand('012C 1', 1800), ['41', '2C']);
           const rEvap = extractHexBytes(await sendObdCommand('012E 1', 1800), ['41', '2E']);
+          const rDist31 = extractHexBytes(await sendObdCommand('0131 1', 1800), ['41', '31']);
 
           if (rCool?.length >= 1) m.coolant = rCool[0] - 40;
           if (rIat?.length >= 1) m.iat = rIat[0] - 40;
@@ -1032,6 +1444,12 @@
           if (rBaro?.length >= 1) m.baro = rBaro[0];
           if (rEgr?.length >= 1) m.egr = +((rEgr[0] * 100) / 255).toFixed(1);
           if (rEvap?.length >= 1) m.evap = +((rEvap[0] * 100) / 255).toFixed(1);
+          if (rDist31?.length >= 2) {
+            const km31 = 256 * rDist31[0] + rDist31[1];
+            m.ecuDist0131 = km31;
+            appState.lastEcu0131Km = km31;
+            localStorage.setItem('civic2007_last_0131_km', String(km31));
+          }
         }
 
         m.vePct = calcVolumetricEfficiency(m.rpm, m.map, m.iat, m.maf);
@@ -1243,10 +1661,51 @@
 
       document.getElementById('fuelPriceInput').addEventListener('change', (e) => {
         localStorage.setItem('civic2007_fuel_price', e.target.value);
+        if (document.getElementById('refuelPriceInput')) document.getElementById('refuelPriceInput').value = e.target.value;
         renderAllSessionViews();
       });
       document.getElementById('fuelBlendSelect').addEventListener('change', (e) => {
         localStorage.setItem('civic2007_fuel_blend', e.target.value);
+      });
+
+      // Eventos de Abastecimento & Odômetro Inteligente
+      document.getElementById('btnQuickRefuel').addEventListener('click', () => {
+        document.querySelector('[data-tab="tab-history"]').click();
+        setTimeout(() => {
+          document.getElementById('refuelSection')?.scrollIntoView({ behavior: 'smooth' });
+          readOdometerForRefuel();
+        }, 120);
+      });
+      document.getElementById('btnReadOdoEcu').addEventListener('click', readOdometerForRefuel);
+      document.getElementById('btnSaveRefuel').addEventListener('click', saveRefuelRecord);
+      document.getElementById('refuelOdoInput').addEventListener('input', updateRefuelDeltaPreview);
+
+      const syncRefuelTotals = (source) => {
+        const p = parseFloat(document.getElementById('refuelPriceInput').value || '0');
+        const lEl = document.getElementById('refuelLitersInput');
+        const tEl = document.getElementById('refuelTotalInput');
+        if (p <= 0) return;
+        if (source === 'LITERS' || source === 'PRICE') {
+          const l = parseFloat(lEl.value || '0');
+          if (l > 0) tEl.value = (l * p).toFixed(2);
+        } else if (source === 'TOTAL') {
+          const t = parseFloat(tEl.value || '0');
+          if (t > 0) lEl.value = (t / p).toFixed(2);
+        }
+        updateRefuelDeltaPreview();
+      };
+      document.getElementById('refuelPriceInput').addEventListener('input', () => syncRefuelTotals('PRICE'));
+      document.getElementById('refuelLitersInput').addEventListener('input', () => syncRefuelTotals('LITERS'));
+      document.getElementById('refuelTotalInput').addEventListener('input', () => syncRefuelTotals('TOTAL'));
+
+      document.getElementById('btnExportRefuelsCsv').addEventListener('click', () => {
+        if (!appState.refuels.length) return showToast('Nenhum abastecimento registrado ainda.');
+        const cols = ['ts', 'label', 'odoKm', 'deltaKm', 'liters', 'pricePerLiter', 'totalCost', 'pumpKml', 'costPerKm', 'obdKml', 'fullTank'];
+        const csv = [cols.join(','), ...appState.refuels.map((r) => cols.map((c) => r[c] ?? '').join(','))].join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = `civic2007_abastecimentos_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
       });
 
       document.getElementById('closeToastBtn').addEventListener('click', () => document.getElementById('toastBanner').classList.add('hidden'));
@@ -1258,15 +1717,24 @@
         if (navigator.clipboard?.writeText) navigator.clipboard.writeText(lastAnalysisText).then(() => showToast('Análise copiada!'));
       });
 
-      // Compartilhamento nativo com Google Drive / WhatsApp (Web Share API)
+      // Compartilhamento nativo com Google Drive / WhatsApp (Web Share API) incluindo Abastecimentos + Viagens
       document.getElementById('btnShareDrive').addEventListener('click', async () => {
-        if (!appState.sessions.length) return showToast('Nenhuma viagem gravada ainda.');
-        const jsonBlob = new Blob([JSON.stringify(appState.sessions, null, 2)], { type: 'application/json' });
+        if (!appState.sessions.length && !appState.refuels.length) return showToast('Nenhum dado gravado ainda.');
+        const payload = {
+          version: '3.1',
+          exportedAt: new Date().toISOString(),
+          odoOffset: appState.odoOffset,
+          lastKnownOdoKm: appState.lastKnownOdoKm,
+          fuelCalibFactor: appState.fuelCalibFactor,
+          refuels: appState.refuels,
+          sessions: appState.sessions
+        };
+        const jsonBlob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
         const fileName = `civic2007_backup_${new Date().toISOString().slice(0, 10)}.json`;
         const file = new File([jsonBlob], fileName, { type: 'application/json' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({ title: 'Backup Civic 2007 OBD-II', text: 'Histórico completo de viagens e telemetria', files: [file] });
+            await navigator.share({ title: 'Backup Civic 2007 OBD-II & Abastecimentos', text: 'Histórico completo de abastecimentos, odômetro e viagens', files: [file] });
             return;
           } catch {}
         }
