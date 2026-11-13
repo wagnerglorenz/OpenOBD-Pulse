@@ -26,9 +26,9 @@
       <div>
         <div class="flex items-center gap-2">
           <h1 class="font-bold text-sm sm:text-base text-white">Civic 2007 1.8 Manual</h1>
-          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v3.1 • R18A1</span>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v3.2 • R18A1</span>
         </div>
-        <p id="headerSubStatus" class="text-[11px] text-slate-400">Gasolina RS E32/E30 • Abastecimentos &amp; Odômetro</p>
+        <p id="headerSubStatus" class="text-[11px] text-slate-400">Gasolina RS • Detector de Mistura &amp; Postos</p>
       </div>
       <div class="flex items-center gap-1.5">
         <button id="btnInstallApp" class="hidden px-2.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲 Instalar</button>
@@ -67,6 +67,10 @@
               ⛽ Abastecer
             </button>
           </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnConnectBLE" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">📶 Modo BLE (alternativo)</button>
+          <button id="btnForgetPorts" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">🔄 Limpar pareamento do app</button>
         </div>
         <div id="connBanner" class="rounded-xl px-3 py-2 text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200">
           🔴 Estado 1/4: Bluetooth desconectado — toque em "Conectar OBDII".
@@ -305,6 +309,22 @@
           📍 Status do Odômetro: Toque em <b>🔍 Ler Odômetro na ECU</b> ou digite o valor do painel abaixo.
         </div>
 
+        <!-- Identificação do Posto & Tipo de Gasolina -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelStationInput" class="text-[10px] text-cyan-300 uppercase font-bold block"> Posto de Combustível (salva seu posto padrão)</label>
+            <input id="refuelStationInput" type="text" value="Meu Posto Padrão" placeholder="Ex: Posto Ipiranga Centro / Shell..." class="w-full mt-1 bg-transparent text-white text-sm font-bold outline-none" />
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelFuelTypeSelect" class="text-[10px] text-slate-400 uppercase font-bold block">Bomba / Tipo</label>
+            <select id="refuelFuelTypeSelect" class="w-full mt-1 bg-slate-950 text-white text-sm font-bold outline-none">
+              <option value="Gasolina Comum">Gasolina Comum</option>
+              <option value="Gasolina Aditivada">Gasolina Aditivada</option>
+              <option value="Gasolina Premium">Gasolina Premium / Podium</option>
+            </select>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
             <label for="refuelOdoInput" class="text-[10px] text-amber-300 uppercase font-bold block">Odômetro Atual (km)</label>
@@ -340,6 +360,40 @@
 
         <!-- Painel de Resumo de Abastecimentos e Média Real -->
         <div id="refuelSummaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mono pt-1"></div>
+
+        <!-- Analisador Químico de Mistura (Gasolina % vs Álcool %) via ECU Wideband + STFT -->
+        <div class="bg-slate-950 border border-cyan-500/40 rounded-xl p-3 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-cyan-300">🧪 Detector de Mistura no Tanque (% Gasolina vs % Álcool)</div>
+              <p class="text-[10px] text-slate-400">Calcula a proporção real pela correção STFT (0106) + Sonda Wideband LAF (0134) em Closed Loop.</p>
+            </div>
+            <button id="btnScanFuelMixture" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+              🧪 Analisar Mistura Agora
+            </button>
+          </div>
+
+          <div id="fuelMixtureLiveBox" class="space-y-2 text-xs">
+            <div class="flex items-center justify-between text-[11px] font-bold">
+              <span id="mixGasLabel" class="text-emerald-300">⛽ Gasolina Pura: ~69%</span>
+              <span id="mixBadge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]">Padrão RS (E31)</span>
+              <span id="mixEthLabel" class="text-sky-300">🌱 Álcool Anidro: ~31%</span>
+            </div>
+            <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex border border-slate-700">
+              <div id="mixGasBar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 69%"></div>
+              <div id="mixEthBar" class="bg-sky-500 h-full transition-all duration-300" style="width: 31%"></div>
+            </div>
+            <div id="mixTechDetails" class="text-[11px] text-slate-400 mono">
+              💡 Dica: Após sair do posto, rode 2 a 3 km com o motor quente (&ge;75°C) para o combustível novo chegar nos bicos; o app mede e vincula automaticamente ao último abastecimento!
+            </div>
+          </div>
+        </div>
+
+        <!-- Classificador do Posto & Comparativo entre Abastecimentos -->
+        <div class="bg-slate-950 border border-amber-500/30 rounded-xl p-3 space-y-2">
+          <div class="text-xs font-bold text-amber-300">🏆 Classificador do Posto &amp; Variação da Mistura entre Abastecimentos</div>
+          <div id="stationClassifierBox" class="space-y-2 text-xs"></div>
+        </div>
 
         <!-- Histórico de Abastecimentos -->
         <div class="space-y-2 pt-1">
@@ -422,6 +476,11 @@
     const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
     const STORAGE_KEY = 'civic2007_obd_sessions_v2';
     const REFUELS_KEY = 'civic2007_refuels_v1';
+    const KNOWN_OBD_SERVICES = [
+      '0000fff0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb',
+      '0000ffb0-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb',
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '0000beef-0000-1000-8000-00805f9b34fb'
+    ];
 
     // Misturas de Gasolina no Brasil / RS (AFR estequiométrico e densidade g/L)
     const FUEL_BLENDS = {
@@ -626,6 +685,14 @@
         document.getElementById('fuelPriceInput').value = savedPrice;
         if (document.getElementById('refuelPriceInput')) document.getElementById('refuelPriceInput').value = savedPrice;
       }
+      const savedStation = localStorage.getItem('civic2007_last_station');
+      if (savedStation && document.getElementById('refuelStationInput')) {
+        document.getElementById('refuelStationInput').value = savedStation;
+      }
+      const savedFuelType = localStorage.getItem('civic2007_last_fuel_type');
+      if (savedFuelType && document.getElementById('refuelFuelTypeSelect')) {
+        document.getElementById('refuelFuelTypeSelect').value = savedFuelType;
+      }
       const savedBlend = localStorage.getItem('civic2007_fuel_blend');
       if (savedBlend) document.getElementById('fuelBlendSelect').value = savedBlend;
       renderAllSessionViews();
@@ -769,6 +836,221 @@
       odoInput.focus();
     }
 
+    // Calcula % de Gasolina Pura vs % de Álcool Anidro pela física estequiométrica do R18A1 (mapa base E25 + Sonda Wideband 0134 + STFT 0106)
+    function estimateFuelMixtureFromEcu(stft, lambdaReal = 1.0, lambdaCmd = 1.0) {
+      // No Honda R18A1 a gasolina (mapa base E25 = AFR 13.28), cada +1% de etanol exige ~+0.43% de pulso de injeção (STFT) para manter Lambda 1.000
+      const lamErrPct = ((lambdaReal - lambdaCmd) || 0) * 100;
+      const effectiveTrim = (stft || 0) + (lamErrPct * 0.8);
+      const rawEth = 26.5 + (effectiveTrim / 0.43);
+      const ethanolPct = Math.min(65, Math.max(18, Math.round(rawEth)));
+      const gasPct = 100 - ethanolPct;
+
+      let qualityLabel = 'Padrão RS (E30–E32)';
+      let badgeClass = 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]';
+      let verdict = 'Mistura equilibrada dentro do padrão atual do RS.';
+      let score = 9.0;
+
+      if (stft < -8.5) {
+        qualityLabel = '⚠️ Suspeita de Solvente / Rrica';
+        badgeClass = 'px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px]';
+        verdict = `ECU tirando muito combustível (STFT ${stft.toFixed(1)}%). Indício de hidrocarboneto pesado/solvente ou regulador.`;
+        score = 4.0;
+      } else if (ethanolPct <= 28) {
+        qualityLabel = `🏆 Gasolina Forte (E${ethanolPct})`;
+        badgeClass = 'px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px]';
+        verdict = `Alta proporção de gasolina pura (${gasPct}% Gasolina / ${ethanolPct}% Álcool). Rende mais km/L!`;
+        score = 9.8;
+      } else if (ethanolPct <= 32) {
+        qualityLabel = `✅ Padrão RS (E${ethanolPct})`;
+        badgeClass = 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]';
+        verdict = `Mistura normal do RS (${gasPct}% Gasolina / ${ethanolPct}% Álcool).`;
+        score = 8.8;
+      } else if (ethanolPct <= 36) {
+        qualityLabel = `🟠 Álcool Acima (E${ethanolPct})`;
+        badgeClass = 'px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px]';
+        verdict = `Álcool elevado (${ethanolPct}% Álcool / apenas ${gasPct}% Gasolina). Aumenta o consumo em ~4% a 7%.`;
+        score = 6.5;
+      } else {
+        qualityLabel = `🚨 Excesso de Álcool (E${ethanolPct})`;
+        badgeClass = 'px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px]';
+        verdict = `Alerta! STFT em +${stft.toFixed(1)}% indica ~${ethanolPct}% de álcool na gasolina (possível combustível batizado).`;
+        score = 3.5;
+      }
+
+      return { gasPct, ethanolPct, stft: +(stft || 0).toFixed(1), qualityLabel, badgeClass, verdict, score };
+    }
+
+    function updateMixtureUiBox(mix, sourceText) {
+      const gasLbl = document.getElementById('mixGasLabel');
+      const ethLbl = document.getElementById('mixEthLabel');
+      const badge = document.getElementById('mixBadge');
+      const gasBar = document.getElementById('mixGasBar');
+      const ethBar = document.getElementById('mixEthBar');
+      const tech = document.getElementById('mixTechDetails');
+      if (!gasLbl) return;
+
+      gasLbl.textContent = `⛽ Gasolina Pura: ~${mix.gasPct}%`;
+      ethLbl.textContent = `🌱 Álcool Anidro: ~${mix.ethanolPct}%`;
+      badge.textContent = mix.qualityLabel;
+      badge.className = mix.badgeClass;
+      gasBar.style.width = `${mix.gasPct}%`;
+      ethBar.style.width = `${mix.ethanolPct}%`;
+      tech.innerHTML = `<b>${sourceText}</b> • Correção STFT: <b>${mix.stft > 0 ? '+' : ''}${mix.stft}%</b> → ${mix.verdict}`;
+    }
+
+    // Mede a mistura na ECU ao vivo ou pelas amostras quentes (Closed Loop) após o abastecimento
+    window.scanFuelMixtureNow = async (targetRefuelId = null) => {
+      const targetRef = targetRefuelId
+        ? appState.refuels.find((x) => x.id === targetRefuelId)
+        : appState.refuels[0] || null;
+
+      // 1) Se conectado ao OBDII, tenta ler STFT (0106) + Wideband (0134) + Água (0105) + Loop (0103) ao vivo
+      if (appState.mode === 'SERIAL' && appState.serialPort) {
+        const wasLive = appState.liveRunning;
+        appState.diagBusy = true;
+        await new Promise((r) => setTimeout(r, 200));
+        try {
+          const b03 = extractHexBytes(await sendObdCommand('0103 1', 2000), ['41', '03']);
+          const b05 = extractHexBytes(await sendObdCommand('0105 1', 2000), ['41', '05']);
+          const b06 = extractHexBytes(await sendObdCommand('0106 1', 2000), ['41', '06']);
+          const b34 = extractHexBytes(await sendObdCommand('0134 1', 2000), ['41', '34']);
+          const b44 = extractHexBytes(await sendObdCommand('0144 1', 2000), ['41', '44']);
+
+          if (b06 && b06.length >= 1) {
+            const stft = ((b06[0] - 128) * 100) / 128;
+            const cool = b05?.length ? b05[0] - 40 : 80;
+            const isClosed = !b03 || b03[0] === 2;
+            const lamR = b34?.length >= 2 ? ((256 * b34[0] + b34[1]) * 2) / 65536 : 1.0;
+            const lamC = b44?.length >= 2 ? ((256 * b44[0] + b44[1]) * 2) / 65536 : 1.0;
+            const mix = estimateFuelMixtureFromEcu(stft, lamR, lamC);
+            const warmWarn = cool < 70 ? ` (⚠️ Motor a ${cool}°C — meça acima de 75°C para maior precisão)` : ` (Motor ${cool}°C • ${isClosed ? 'Closed Loop' : 'Open Loop'})`;
+            updateMixtureUiBox(mix, `Leitura ao vivo da ECU${warmWarn}`);
+
+            if (targetRef) {
+              targetRef.gasPct = mix.gasPct;
+              targetRef.ethanolPct = mix.ethanolPct;
+              targetRef.stftAvg = mix.stft;
+              targetRef.qualityLabel = mix.qualityLabel;
+              targetRef.qualityScore = mix.score;
+              saveRefuels();
+            }
+            appState.diagBusy = false;
+            if (wasLive && !appState.liveRunning) startLiveMonitoring();
+            showToast(`Mistura detectada: ${mix.gasPct}% Gasolina / ${mix.ethanolPct}% Álcool`);
+            return;
+          }
+        } catch {}
+        appState.diagBusy = false;
+        if (wasLive && !appState.liveRunning) startLiveMonitoring();
+      }
+
+      // 2) Se o carro estiver desligado/desconectado, calcula pelas amostras gravadas com motor quente (>=75°C) após o abastecimento
+      const minTs = targetRef ? new Date(targetRef.ts).getTime() : 0;
+      let warmRows = [];
+      for (const s of appState.sessions) {
+        if (new Date(s.endedAt || s.startedAt).getTime() >= minTs) {
+          for (const r of (s.rows || [])) {
+            if ((r.coolant || 0) >= 72 && (r.rpm || 0) > 500 && typeof r.stft === 'number') {
+              warmRows.push(r);
+            }
+          }
+        }
+      }
+      if (!warmRows.length) {
+        // Usa todas as amostras quentes recentes se ainda não rodou após o abastecimento
+        for (const s of appState.sessions.slice(0, 3)) {
+          for (const r of (s.rows || [])) {
+            if ((r.coolant || 0) >= 72 && (r.rpm || 0) > 500 && typeof r.stft === 'number') warmRows.push(r);
+          }
+        }
+      }
+
+      if (!warmRows.length) {
+        return showToast('Conecte ao OBDII com o motor ligado (ou rode 2 km após abastecer) para medir a mistura.');
+      }
+
+      const avgStft = warmRows.reduce((a, r) => a + r.stft, 0) / warmRows.length;
+      const avgLamR = warmRows.reduce((a, r) => a + (r.lambdaReal || 1), 0) / warmRows.length;
+      const avgLamC = warmRows.reduce((a, r) => a + (r.lambdaCmd || 1), 0) / warmRows.length;
+      const mix = estimateFuelMixtureFromEcu(avgStft, avgLamR, avgLamC);
+      updateMixtureUiBox(mix, `Calculado de ${warmRows.length} leituras da Sonda Wideband (Motor Quente)`);
+
+      if (targetRef) {
+        targetRef.gasPct = mix.gasPct;
+        targetRef.ethanolPct = mix.ethanolPct;
+        targetRef.stftAvg = mix.stft;
+        targetRef.qualityLabel = mix.qualityLabel;
+        targetRef.qualityScore = mix.score;
+        saveRefuels();
+      }
+      showToast(`Mistura analisada: ${mix.gasPct}% Gasolina / ${mix.ethanolPct}% Álcool`);
+    };
+
+    function renderStationClassifier() {
+      const box = document.getElementById('stationClassifierBox');
+      if (!box) return;
+      if (!appState.refuels.length) {
+        box.innerHTML = '<div class="text-slate-400">Registre seus abastecimentos com o nome do posto para o app classificar a qualidade e mostrar se a mistura de gasolina/álcool está mudando entre um abastecimento e outro.</div>';
+        return;
+      }
+
+      const byStation = {};
+      for (const r of appState.refuels) {
+        const st = (r.stationName || 'Meu Posto Padrão').trim();
+        if (!byStation[st]) byStation[st] = [];
+        byStation[st].push(r);
+      }
+
+      box.innerHTML = Object.keys(byStation).map((stName) => {
+        const list = byStation[stName]; // ordenado do mais recente para o mais antigo
+        const withMix = list.filter((x) => typeof x.ethanolPct === 'number');
+        const withKml = list.filter((x) => x.pumpKml > 0);
+        const avgEth = withMix.length ? Math.round(withMix.reduce((a, x) => a + x.ethanolPct, 0) / withMix.length) : null;
+        const avgGas = avgEth !== null ? (100 - avgEth) : null;
+        const avgKml = withKml.length ? (withKml.reduce((a, x) => a + x.pumpKml, 0) / withKml.length) : null;
+        const avgScore = withMix.length ? (withMix.reduce((a, x) => a + (x.qualityScore || 8.5), 0) / withMix.length) : null;
+
+        // Comparativo entre os 2 últimos abastecimentos neste mesmo posto
+        let changeHtml = '<div class="text-slate-400 text-[11px] mt-1">Faça pelo menos 2 abastecimentos neste posto para ver se o lote de combustível mudou.</div>';
+        if (list.length >= 2) {
+          const cur = list[0];
+          const prv = list[1];
+          const parts = [];
+          if (typeof cur.ethanolPct === 'number' && typeof prv.ethanolPct === 'number') {
+            const diffEth = cur.ethanolPct - prv.ethanolPct;
+            if (diffEth === 0) {
+              parts.push(`✅ <b>Mistura estável</b> entre ${prv.label.slice(0, 10)} e ${cur.label.slice(0, 10)}: manteve <b>${cur.gasPct}% Gasolina / ${cur.ethanolPct}% Álcool</b>.`);
+            } else if (diffEth > 0) {
+              parts.push(`⚠️ <b>Mudança de lote detectada:</b> O álcool subiu de <b>${prv.ethanolPct}% (${prv.gasPct}% Gasolina)</b> em ${prv.label.slice(0, 10)} para <b>${cur.ethanolPct}% (${cur.gasPct}% Gasolina)</b> em ${cur.label.slice(0, 10)} (<b>+${diffEth}% de álcool</b>).`);
+            } else {
+              parts.push(`🏆 <b>Gasolina melhorou!</b> O álcool caiu de <b>${prv.ethanolPct}%</b> em ${prv.label.slice(0, 10)} para <b>${cur.ethanolPct}% (${cur.gasPct}% Gasolina pura)</b> em ${cur.label.slice(0, 10)} (<b>${diffEth}% de álcool</b>).`);
+            }
+          } else {
+            parts.push(`ℹ️ Toque em <b>🧪 Medir Mistura</b> no card do abastecimento após rodar alguns km para comparar a variação de álcool/gasolina entre ${prv.label.slice(0, 10)} e ${cur.label.slice(0, 10)}.`);
+          }
+          if (cur.pumpKml && prv.pumpKml) {
+            const dKml = +(cur.pumpKml - prv.pumpKml).toFixed(2);
+            parts.push(`Média na bomba variou de <b>${prv.pumpKml.toFixed(2)} km/L</b> para <b>${cur.pumpKml.toFixed(2)} km/L</b> (${dKml >= 0 ? '+' : ''}${dKml} km/L).`);
+          }
+          changeHtml = `<div class="text-[11px] text-slate-200 mt-1.5 bg-slate-900 border border-slate-800 rounded-lg p-2 space-y-1">${parts.map((p) => `<div>${p}</div>`).join('')}</div>`;
+        }
+
+        return `
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="font-bold text-white text-xs">🏪 ${stName} <span class="text-slate-400 font-normal">(${list.length} abastecimento${list.length > 1 ? 's' : ''})</span></div>
+              <div class="flex items-center gap-1.5">
+                ${avgScore !== null ? `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px]">Nota do Posto: ${avgScore.toFixed(1)}/10</span>` : ''}
+                ${avgGas !== null ? `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">Média: ${avgGas}% Gas / ${avgEth}% Álc</span>` : ''}
+                ${avgKml !== null ? `<span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold text-[10px]">${avgKml.toFixed(2)} km/L</span>` : ''}
+              </div>
+            </div>
+            ${changeHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderRefuelViews() {
       const grid = document.getElementById('refuelSummaryGrid');
       const list = document.getElementById('refuelsList');
@@ -815,6 +1097,7 @@
       `;
 
       updateRefuelDeltaPreview();
+      renderStationClassifier();
 
       if (!appState.refuels.length) {
         list.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhum abastecimento registrado ainda. No próximo posto, preencha o valor, os litros e o odômetro acima!</div>';
@@ -826,8 +1109,10 @@
           <div>
             <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
               <span>⛽ ${r.label}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">🏪 ${r.stationName || 'Meu Posto Padrão'} (${r.fuelType || 'Gasolina Comum'})</span>
               <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 mono">Odômetro: ${r.odoKm.toLocaleString('pt-BR')} km</span>
               ${r.deltaKm ? `<span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">+${r.deltaKm} km rodados</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">1º Marco de Odômetro</span>'}
+              ${typeof r.ethanolPct === 'number' ? `<span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🧪 ${r.gasPct}% Gasolina / ${r.ethanolPct}% Álcool (${r.qualityLabel || ''})</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">🧪 Mistura: rode 2 km ou toque em Medir</span>'}
             </div>
             <div class="mono text-[11px] text-slate-300 mt-1">
               <b>${r.liters.toFixed(2)} L</b> × R$ ${r.pricePerLiter.toFixed(2)}/L = <b class="text-amber-300">R$ ${r.totalCost.toFixed(2)}</b>
@@ -836,7 +1121,10 @@
               ${r.obdKml ? ` • (Scanner mediu ${r.obdKml.toFixed(1)} km/L)` : ''}
             </div>
           </div>
-          <button onclick="deleteRefuel('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">🗑️</button>
+          <div class="flex items-center gap-1.5">
+            <button onclick="scanFuelMixtureNow('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 font-semibold text-xs">🧪 Medir Mistura</button>
+            <button onclick="deleteRefuel('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">🗑️</button>
+          </div>
         </div>
       `).join('');
     }
@@ -913,14 +1201,26 @@
         localStorage.setItem('civic2007_odo_offset', String(appState.odoOffset));
       }
 
-      // Sincroniza preço global do combustível no app
+      // Sincroniza preço global do combustível e posto padrão no app
       document.getElementById('fuelPriceInput').value = pricePerLiter.toFixed(2);
       localStorage.setItem('civic2007_fuel_price', pricePerLiter.toFixed(2));
+      const stationName = (document.getElementById('refuelStationInput')?.value || 'Meu Posto Padrão').trim() || 'Meu Posto Padrão';
+      const fuelType = document.getElementById('refuelFuelTypeSelect')?.value || 'Gasolina Comum';
+      localStorage.setItem('civic2007_last_station', stationName);
+      localStorage.setItem('civic2007_last_fuel_type', fuelType);
+
+      // Se o motor já está quente e temos STFT recente, já calcula a mistura inicial
+      let initMix = null;
+      if ((appState.lastMetrics.coolant || 0) >= 72 && (appState.lastMetrics.rpm || 0) > 400) {
+        initMix = estimateFuelMixtureFromEcu(appState.lastMetrics.stft, appState.lastMetrics.lambdaReal, appState.lastMetrics.lambdaCmd);
+      }
 
       const rec = {
         id: 'ref_' + now.getTime(),
         ts: now.toISOString(),
         label: now.toLocaleString('pt-BR'),
+        stationName,
+        fuelType,
         odoKm,
         deltaKm,
         liters,
@@ -930,7 +1230,12 @@
         pumpKml,
         costPerKm,
         obdKml,
-        ecu0131Km: appState.lastEcu0131Km
+        ecu0131Km: appState.lastEcu0131Km,
+        gasPct: initMix ? initMix.gasPct : undefined,
+        ethanolPct: initMix ? initMix.ethanolPct : undefined,
+        stftAvg: initMix ? initMix.stft : undefined,
+        qualityLabel: initMix ? initMix.qualityLabel : undefined,
+        qualityScore: initMix ? initMix.score : undefined
       };
 
       appState.refuels.unshift(rec);
@@ -1257,7 +1562,10 @@
         appState.pendingResolve = (r) => { clearTimeout(t); resolve(r); };
         const bytes = new TextEncoder().encode(cmd + '\r');
         try {
-          if (appState.mode === 'SERIAL' && appState.serialPort?.writable) {
+          if (appState.mode === 'BLE' && appState.bleWriteChar) {
+            if (appState.bleWriteChar.properties.writeWithoutResponse) await appState.bleWriteChar.writeValueWithoutResponse(bytes);
+            else await appState.bleWriteChar.writeValue(bytes);
+          } else if (appState.mode === 'SERIAL' && appState.serialPort?.writable) {
             const w = appState.serialPort.writable.getWriter();
             await w.write(bytes);
             w.releaseLock();
@@ -1270,50 +1578,144 @@
       });
     }
 
+    function markDisconnected(msg) {
+      appState.liveRunning = false;
+      appState.mode = 'DISCONNECTED';
+      appState.bleWriteChar = null;
+      try { setLiveButtonUi(false); } catch {}
+      document.getElementById('connStatusText').textContent = 'Desconectado';
+      document.getElementById('connDot').className = 'w-2 h-2 rounded-full bg-rose-400';
+      document.getElementById('btnConnectSerial').textContent = '🔌 Conectar OBDII';
+      setConnBanner('error', msg || '🔴 Estado 1/4: Bluetooth desconectado — toque em "Conectar OBDII".');
+    }
+
+    // Fecha a porta com segurança (libera leitor) para permitir reconectar sem "port already open"
+    async function safeClosePort(port) {
+      if (!port) return;
+      try { appState.serialReader && await appState.serialReader.cancel(); } catch {}
+      appState.serialReader = null;
+      await new Promise((r) => setTimeout(r, 150));
+      try { await port.close(); } catch {}
+    }
+
     async function openSerialPort(port) {
-      setConnBanner('connecting', '⏳ Abrindo conexão Bluetooth SPP com o scanner...');
-      await port.open({ baudRate: 38400 });
-      appState.serialPort = port;
-      appState.mode = 'SERIAL';
-      await requestWakeLock();
+      if (appState.connecting) return;
+      appState.connecting = true;
+      try {
+        setConnBanner('connecting', '⏳ Abrindo conexão Bluetooth SPP com o scanner...');
+        // Se a porta ficou "presa" aberta de uma tentativa anterior, fecha antes
+        if (port.readable || port.writable) await safeClosePort(port);
+        if (appState.serialPort && appState.serialPort !== port) await safeClosePort(appState.serialPort);
 
-      (async () => {
-        const dec = new TextDecoder();
-        while (port.readable) {
-          const r = port.readable.getReader();
-          try {
-            while (true) {
-              const { value, done } = await r.read();
-              if (done) break;
-              if (value) handleChunk(dec.decode(value));
-            }
-          } catch (e) {
-            setConnBanner('error', '🔴 Estado 1/4: Bluetooth desconectado (' + e.message + ')');
-            break;
-          } finally { r.releaseLock(); }
-        }
-      })();
+        await Promise.race([
+          port.open({ baudRate: 38400 }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('Tempo esgotado abrindo o Bluetooth (scanner longe ou desligado)')), 15000))
+        ]);
+        appState.serialPort = port;
+        appState.mode = 'SERIAL';
+        requestWakeLock();
 
-      await sendObdCommand('ATZ', 3000);
-      await sendObdCommand('ATE0', 2000);
-      document.getElementById('connStatusText').textContent = 'Conectado';
-      document.getElementById('connDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
-      document.getElementById('btnConnectSerial').textContent = '✅ OBDII OK';
-      await startLiveMonitoring();
+        (async () => {
+          const dec = new TextDecoder();
+          while (port.readable && appState.serialPort === port) {
+            const r = port.readable.getReader();
+            appState.serialReader = r;
+            try {
+              while (true) {
+                const { value, done } = await r.read();
+                if (done) break;
+                if (value) handleChunk(dec.decode(value));
+              }
+            } catch (e) {
+              addLog('ERR', e.message);
+              break;
+            } finally { try { r.releaseLock(); } catch {} }
+          }
+          if (appState.serialPort === port && appState.mode === 'SERIAL') {
+            await safeClosePort(port);
+            markDisconnected('🔴 Conexão Bluetooth perdida — toque em "Conectar OBDII" para reconectar.');
+          }
+        })();
+
+        const chip = cleanElmText(await sendObdCommand('ATZ', 3500));
+        await sendObdCommand('ATE0', 2000);
+        document.getElementById('connStatusText').textContent = 'Conectado';
+        document.getElementById('connDot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+        document.getElementById('btnConnectSerial').textContent = '✅ OBDII OK (Reconectar)';
+        setConnBanner('connected', `✅ OK, você está conectado! (${chip && chip !== 'TIMEOUT' ? chip : 'OBDII SPP'})`);
+        showToast('OK, você está conectado!');
+      } finally {
+        appState.connecting = false;
+      }
+      startLiveMonitoring();
     }
 
     async function connectSerialSPP() {
       if (!('serial' in navigator)) {
-        setConnBanner('error', '❌ Use o Google Chrome no Android.');
+        setConnBanner('error', '❌ Use o Google Chrome no Android (Web Serial indisponível).');
         return showToast('Use o Google Chrome.');
       }
+      if (appState.connecting) return showToast('Já está conectando, aguarde...');
       try {
+        // Reconexão: para o loop e fecha a porta atual antes
+        appState.liveRunning = false;
+        if (appState.serialPort) {
+          const old = appState.serialPort;
+          appState.serialPort = null;
+          appState.mode = 'DISCONNECTED';
+          await safeClosePort(old);
+        }
         setConnBanner('connecting', '⏳ Selecione OBDII na lista...');
         const port = await navigator.serial.requestPort({ allowedBluetoothServiceClassIds: [SPP_UUID] });
         await openSerialPort(port);
       } catch (e) {
-        setConnBanner('error', '🔴 Não conectado: ' + e.message);
+        addLog('ERR', e.message);
+        markDisconnected('🔴 Não conectou: ' + e.message + ' — confira se o carro/scanner está ligado e tente de novo.');
       }
+    }
+
+    async function connectBLE() {
+      if (!('bluetooth' in navigator)) return showToast('Web Bluetooth indisponível. Use o Chrome.');
+      try {
+        setConnBanner('connecting', '⏳ Selecione o scanner na lista BLE...');
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: KNOWN_OBD_SERVICES });
+        const server = await device.gatt.connect();
+        const services = await server.getPrimaryServices();
+        let wChar = null, nChar = null;
+        for (const s of services) {
+          const chars = await s.getCharacteristics();
+          for (const c of chars) {
+            if ((c.properties.write || c.properties.writeWithoutResponse) && !wChar) wChar = c;
+            if (c.properties.notify && !nChar) nChar = c;
+          }
+        }
+        if (!wChar || !nChar) return markDisconnected('🔴 Este scanner não tem serial BLE. Use "Conectar OBDII" (SPP).');
+        appState.bleWriteChar = wChar;
+        await nChar.startNotifications();
+        nChar.addEventListener('characteristicvaluechanged', (e) => handleChunk(new TextDecoder().decode(e.target.value)));
+        device.addEventListener('gattserverdisconnected', () => markDisconnected('🔴 BLE desconectado.'));
+        appState.mode = 'BLE';
+        await sendObdCommand('ATZ', 3500);
+        await sendObdCommand('ATE0', 2000);
+        document.getElementById('connStatusText').textContent = `BLE: ${device.name || 'OBDII'}`;
+        document.getElementById('connDot').className = 'w-2 h-2 rounded-full bg-blue-400';
+        setConnBanner('connected', `✅ OK, você está conectado via BLE (${device.name || 'OBDII'})!`);
+        startLiveMonitoring();
+      } catch (e) {
+        addLog('ERR', e.message);
+        markDisconnected('🔴 BLE não conectou: ' + e.message);
+      }
+    }
+
+    async function forgetSerialPorts() {
+      try {
+        appState.liveRunning = false;
+        if (appState.serialPort) { await safeClosePort(appState.serialPort); appState.serialPort = null; }
+        const ports = await navigator.serial.getPorts();
+        for (const p of ports) { try { await p.forget(); } catch {} }
+        markDisconnected('🔄 Pareamento do app limpo. Toque em "Conectar OBDII" e selecione OBDII novamente.');
+        showToast('Autorização limpa. Conecte novamente.');
+      } catch (e) { showToast('Erro: ' + e.message); }
     }
 
     async function initElmProtocol() {
@@ -1362,10 +1764,11 @@
       if (appState.mode === 'DISCONNECTED') return showToast('Conecte ao OBDII primeiro.');
       if (appState.liveRunning) return;
       appState.liveRunning = true;
+      const myLoop = (appState.loopId = (appState.loopId || 0) + 1);
       setLiveButtonUi(true);
       await initElmProtocol();
 
-      while (appState.liveRunning) {
+      while (appState.liveRunning && appState.loopId === myLoop && appState.mode !== 'DISCONNECTED') {
         if (appState.diagBusy) { await new Promise((r) => setTimeout(r, 200)); continue; }
 
         // Leitura rápida com sufixo CAN "1" (retorna no 1º frame sem esperar 200ms)
@@ -1525,7 +1928,23 @@
             const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
             const sum = summarizeSession(sess);
             document.getElementById('mStopsSummary').textContent = `${sum.stops} paradas • R$ ${(sum.idleLiters * price).toFixed(2)}`;
-            if (sess.rows.length % 6 === 0) saveSessions();
+            if (sess.rows.length % 6 === 0) {
+              // Atualiza automaticamente a mistura (Gasolina % vs Álcool %) do tanque atual quando o motor está quente em Closed Loop
+              if (m.coolant >= 75 && m.fuelSys === 'Closed Loop') {
+                const liveMix = estimateFuelMixtureFromEcu(m.stft, m.lambdaReal, m.lambdaCmd);
+                updateMixtureUiBox(liveMix, `Monitoramento Ao Vivo (${m.coolant}°C • Closed Loop)`);
+                const latestRef = appState.refuels[0];
+                if (latestRef && sum.distKm >= 1.2) {
+                  latestRef.gasPct = liveMix.gasPct;
+                  latestRef.ethanolPct = liveMix.ethanolPct;
+                  latestRef.stftAvg = liveMix.stft;
+                  latestRef.qualityLabel = liveMix.qualityLabel;
+                  latestRef.qualityScore = liveMix.score;
+                  try { localStorage.setItem(REFUELS_KEY, JSON.stringify(appState.refuels)); } catch {}
+                }
+              }
+              saveSessions();
+            }
           }
           updateOperationMatrix(m.rpm, m.load, m.timing, m.stft, m.lambdaReal);
         }
@@ -1678,6 +2097,7 @@
       });
       document.getElementById('btnReadOdoEcu').addEventListener('click', readOdometerForRefuel);
       document.getElementById('btnSaveRefuel').addEventListener('click', saveRefuelRecord);
+      document.getElementById('btnScanFuelMixture').addEventListener('click', () => scanFuelMixtureNow());
       document.getElementById('refuelOdoInput').addEventListener('input', updateRefuelDeltaPreview);
 
       const syncRefuelTotals = (source) => {
@@ -1710,6 +2130,8 @@
 
       document.getElementById('closeToastBtn').addEventListener('click', () => document.getElementById('toastBanner').classList.add('hidden'));
       document.getElementById('btnConnectSerial').addEventListener('click', connectSerialSPP);
+      document.getElementById('btnConnectBLE').addEventListener('click', connectBLE);
+      document.getElementById('btnForgetPorts').addEventListener('click', forgetSerialPorts);
       document.getElementById('btnAllSystems').addEventListener('click', runAllSystemsCheck);
       document.getElementById('btnAnalyzeAll').addEventListener('click', () => runAnalysis(appState.sessions, 'Todas as Viagens'));
       document.getElementById('btnCopyAnalysis').addEventListener('click', () => {
@@ -1850,8 +2272,11 @@
             setConnBanner('connecting', '🔄 Conectando automaticamente ao OBDII...');
             await openSerialPort(ports[0]);
           }
-        } catch {
-          setConnBanner('waiting', '🔴 Estado 1/4: OBDII fora de alcance — toque em "Conectar OBDII" no carro.');
+        } catch (e) {
+          addLog('ERR', 'Auto-conexão: ' + e.message);
+          try { const p = (await navigator.serial.getPorts())[0]; if (p) await safeClosePort(p); } catch {}
+          appState.serialPort = null;
+          markDisconnected('🟡 OBDII fora de alcance — toque em "Conectar OBDII" quando estiver no carro.');
         }
       }
     });
