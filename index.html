@@ -20,28 +20,28 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col">
-  <!-- Topo Fixo -->
-  <header class="bg-slate-900/95 sticky top-0 z-40 backdrop-blur border-b border-slate-800 px-3 py-2.5">
-    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5">
-        <img src="./icon.svg" class="w-8 h-8 rounded-lg" alt="Logo" />
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-black text-sm sm:text-base text-white tracking-wide">OPEN<span class="text-cyan-400">OBD</span> <span class="text-emerald-400">PULSE</span></h1>
-            <span id="vehicleBadgeHeader" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Carregando...</span>
+  <!-- Topo Fixo Compacto -->
+  <header class="bg-slate-900/95 sticky top-0 z-40 backdrop-blur border-b border-slate-800 px-3 py-2">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <img src="./icon.svg" class="w-7 h-7 rounded-lg shrink-0" alt="Logo" />
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-black text-sm text-white tracking-wide truncate">OPEN<span class="text-cyan-400">OBD</span> <span class="text-emerald-400">PULSE</span></h1>
+            <span id="vehicleBadgeHeader" class="hidden sm:inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Carregando...</span>
           </div>
-          <p id="headerSubStatus" class="text-[11px] text-slate-400">Telemetria &amp; Diagnóstico Universal</p>
+          <p id="headerSubStatus" class="hidden sm:block text-[10px] text-slate-400 truncate">Telemetria &amp; Diagnóstico Universal</p>
         </div>
       </div>
-      <div class="flex items-center gap-1.5">
-        <button id="btnSwitchVehicleHeader" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-cyan-300 font-semibold flex items-center gap-1">
-          🚗 <span id="headerCurrentCarName">Meu Carro</span> ▾
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="btnSwitchVehicleHeader" class="px-2 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-cyan-300 font-semibold flex items-center gap-1 max-w-[125px] truncate">
+          🚗 <span id="headerCurrentCarName" class="truncate">Meu Carro</span> ▾
         </button>
-        <button id="btnInstallApp" class="hidden px-2.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲 Instalar</button>
-        <span id="gpsBadge" class="px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300">📍 GPS...</span>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-[11px] font-medium">
+        <button id="btnInstallApp" class="hidden px-2 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲</button>
+        <span id="gpsBadge" class="px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300">📍 --</span>
+        <div class="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-[11px] font-medium">
           <span id="connDot" class="w-2 h-2 rounded-full bg-rose-400"></span>
-          <span id="connStatusText">Desconectado</span>
+          <span id="connStatusText" class="hidden sm:inline">Desconectado</span>
         </div>
       </div>
     </div>
@@ -176,49 +176,57 @@
   <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4 space-y-4">
     <!-- ================= ABA 1: COCKPIT (AO VIVO) ================= -->
     <div id="tab-cockpit" class="tab-pane space-y-3">
-      <!-- Conexão + Banner dos 4 Estados -->
-      <section class="card p-3.5 space-y-2.5">
+      <!-- Conexão + Banner dos 4 Estados (Modo Direção Limpo) -->
+      <section class="card p-3 space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 class="text-sm font-bold text-white">Conexão OBD-II (Bluetooth SPP)</h2>
-            <p class="text-[11px] text-slate-400">Conecta automaticamente e mantém a tela acesa ao dirigir.</p>
+          <div id="connBanner" class="flex-1 min-w-[200px] rounded-xl px-3 py-2 text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200">
+            🔴 Estado 1/4: Bluetooth desconectado — toque em "Conectar OBDII".
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button id="btnConnectSerial" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button id="btnConnectSerial" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
               🔌 Conectar OBDII
             </button>
-            <button id="btnToggleLive" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold">
+            <button id="btnToggleLive" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold">
               ▶ Ao Vivo
             </button>
-            <button id="btnQuickRefuel" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
-              ⛽ Abastecer
+            <button id="btnQuickRefuel" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
+              ⛽ Posto
             </button>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="btnConnectBLE" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">📶 Modo BLE (alternativo)</button>
-          <button id="btnForgetPorts" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">🔄 Limpar pareamento do app</button>
-        </div>
-        <div id="connBanner" class="rounded-xl px-3 py-2 text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200">
-          🔴 Estado 1/4: Bluetooth desconectado — toque em "Conectar OBDII".
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <details id="connAdvancedDetails" class="flex-1">
+            <summary class="cursor-pointer text-slate-400 hover:text-slate-200 select-none">⚙️ Opções de pareamento &amp; rota manual</summary>
+            <div class="mt-2 space-y-2 pt-2 border-t border-slate-800">
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="btnConnectBLE" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">📶 Modo BLE (alternativo)</button>
+                <button id="btnForgetPorts" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold">🔄 Limpar pareamento do app</button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1">
+                <input id="routeNameInput" type="text" value="Caminho A" placeholder="Caminho A, Caminho B..." class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none" />
+                <select id="routeTypeSelect" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+                  <option value="IDA_VOLTA">Ida e Volta (A→B→A)</option>
+                  <option value="TRECHO_UNICO">Trecho Único (A→B)</option>
+                </select>
+                <button id="btnToggleRoute" class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+                  ▶ Iniciar Trajeto
+                </button>
+              </div>
+            </div>
+          </details>
+          <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🤖 Rota Automática</span>
         </div>
       </section>
 
-      <!-- Controle Rápido de Trajeto (Caminho A / B) -->
-      <section class="card p-3.5 space-y-2.5 border-cyan-500/30">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div class="text-xs font-bold text-white">🛣️ Gravação de Rota (Caminho A vs Caminho B)</div>
-          <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Automático por partida</span>
+      <!-- Barra Ao Vivo: Trajeto Atual + Eco-Score Instantâneo -->
+      <section class="card p-3 space-y-2 border-emerald-500/20">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <span id="cockpitLiveTripStrip" class="mono text-cyan-300 font-semibold">Trajeto atual: 0.0 km • 0 min • R$ 0,00</span>
+          <span id="cockpitEcoLabel" class="font-bold text-emerald-300">Eco: --</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-          <input id="routeNameInput" type="text" value="Caminho A" placeholder="Caminho A, Caminho B..." class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none" />
-          <select id="routeTypeSelect" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
-            <option value="IDA_VOLTA">Ida e Volta (A→B→A)</option>
-            <option value="TRECHO_UNICO">Trecho Único (A→B)</option>
-          </select>
-          <button id="btnToggleRoute" class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
-            ▶ Iniciar Trajeto
-          </button>
+        <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div id="cockpitEcoBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 75%"></div>
         </div>
       </section>
 
@@ -284,8 +292,22 @@
       </section>
     </div>
 
-    <!-- ================= ABA 2: ECU & SAÚDE (R18A1) ================= -->
+    <!-- ================= ABA 2B: ECU & SAÚDE ================= -->
     <div id="tab-ecu" class="tab-pane hidden space-y-3">
+      <!-- Barra Segmentada Elétrica <-> ECU -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+        <button type="button" onclick="switchTabDirect('tab-electric')" class="py-2 rounded-lg font-semibold text-slate-400 hover:text-white">⚡ Bateria &amp; Alternador</button>
+        <button type="button" onclick="switchTabDirect('tab-ecu')" class="py-2 rounded-lg font-bold bg-cyan-600 text-white">🔬 ECU, Sonda &amp; Matriz</button>
+      </div>
+
+      <!-- Resumo Semafórico de Saúde do Motor -->
+      <div id="ecuHealthPills" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">🌡️ Termostática: <b id="pillThermostat" class="text-slate-300">--</b></div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">🧪 Mistura STFT: <b id="pillStft" class="text-slate-300">--</b></div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">🔥 Catalisador: <b id="pillCat" class="text-slate-300">--</b></div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">🩺 Falhas ECU: <b id="pillDtc" class="text-slate-300">0</b></div>
+      </div>
+
       <section class="card p-3.5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -388,6 +410,9 @@
           </div>
         </div>
         <div id="routeMap" class="border border-slate-800"></div>
+        <div id="mapSelectedSummary" class="text-[11px] mono text-slate-300 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+          Selecione uma viagem acima para ver distância, paradas, consumo e custo no mapa.
+        </div>
       </section>
 
       <!-- Comparador Caminho A vs Caminho B + Média Histórica -->
@@ -413,8 +438,15 @@
           </div>
           <span id="autoTripStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Aguardando movimento</span>
         </div>
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span class="text-slate-400">Atalhos (1 toque):</span>
+          <button type="button" onclick="saveKnownPlaceDirect('Casa')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 font-semibold">🏠 Casa</button>
+          <button type="button" onclick="saveKnownPlaceDirect('Escola')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 font-semibold">🏫 Escola</button>
+          <button type="button" onclick="saveKnownPlaceDirect('Trabalho')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 font-semibold">🏢 Trabalho</button>
+          <button type="button" onclick="saveKnownPlaceDirect('Mercado')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 font-semibold">🛒 Mercado</button>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-          <input id="knownPlaceNameInput" type="text" placeholder="Nome do local atual (ex: Casa, Colégio do Caio)" class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white outline-none focus:border-emerald-400" />
+          <input id="knownPlaceNameInput" type="text" placeholder="Outro nome (ex: Colégio do Caio)" class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white outline-none focus:border-emerald-400" />
           <button id="btnSaveCurrentPlace" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">📍 Salvar Local Atual</button>
         </div>
         <div id="knownPlacesList" class="flex flex-wrap gap-1.5 text-[11px]"></div>
@@ -426,15 +458,18 @@
 
     <!-- ================= ABA 2: ELÉTRICA & BATERIA ================= -->
     <div id="tab-electric" class="tab-pane hidden space-y-3">
+      <!-- Barra Segmentada Elétrica <-> ECU -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+        <button type="button" onclick="switchTabDirect('tab-electric')" class="py-2 rounded-lg font-bold bg-amber-500 text-slate-950">⚡ Bateria &amp; Alternador</button>
+        <button type="button" onclick="switchTabDirect('tab-ecu')" class="py-2 rounded-lg font-semibold text-slate-400 hover:text-white">🔬 ECU, Sonda &amp; Matriz</button>
+      </div>
+
       <section class="card p-3.5 space-y-3 border-amber-400/30">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div class="text-xs font-bold text-amber-300">⚡ Saúde Elétrica: Bateria, Partida &amp; Alternador</div>
             <div class="text-[11px] text-slate-400">Monitoramento contínuo via Pino 16 (ATRV) e ECU (PID 0142) sem gravação na central.</div>
           </div>
-          <button type="button" onclick="document.querySelector('[data-tab=&quot;tab-ecu&quot;]')?.click() || switchTabDirect('tab-ecu')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-semibold text-cyan-300">
-            🔬 Abrir ECU &amp; Matriz
-          </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -471,7 +506,10 @@
           <p class="text-slate-400">
             Com o motor em marcha lenta, ligue <b>farol baixo + ar-condicionado</b> por 15 segundos. O alternador saudável deve segurar entre <b>13.8V e 14.5V</b> (alerta abaixo de 13.2V ou acima de 15.0V).
           </p>
-          <div id="elHistoryStrip" class="mono text-[10px] text-slate-400 overflow-x-auto whitespace-nowrap pt-1 border-t border-slate-800/80">
+          <div id="elVoltageSparkline" class="pt-1 border-t border-slate-800/80">
+            <div class="text-[10px] text-slate-400">Curva de tensão recente aparecerá aqui ao conectar o OBD-II.</div>
+          </div>
+          <div id="elHistoryStrip" class="mono text-[10px] text-slate-400 overflow-x-auto whitespace-nowrap">
             Histórico recente: aguardando amostras de tensão...
           </div>
         </div>
@@ -583,9 +621,12 @@
               <div id="mixGasBar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 69%"></div>
               <div id="mixEthBar" class="bg-sky-500 h-full transition-all duration-300" style="width: 31%"></div>
             </div>
-            <div id="mixTechDetails" class="text-[11px] text-slate-400 mono">
-              💡 Dica: Após sair do posto, rode 2 a 3 km com o motor quente (&ge;75°C) para o combustível novo chegar nos bicos; o app mede e vincula automaticamente ao último abastecimento!
-            </div>
+            <details class="text-[11px] text-slate-400">
+              <summary class="cursor-pointer text-cyan-300 font-semibold select-none">ℹ️ Como funciona a análise química</summary>
+              <div id="mixTechDetails" class="mono mt-1.5 text-[10px] text-slate-400">
+                💡 Dica: Após sair do posto, rode 2 a 3 km com o motor quente (&ge;75°C) para o combustível novo chegar nos bicos; o app mede e vincula automaticamente ao último abastecimento!
+              </div>
+            </details>
           </div>
         </div>
 
@@ -621,18 +662,32 @@
             <button id="btnOpenVehiclesManager" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
               ⚙️ Trocar / Editar Veículo
             </button>
-            <button id="btnResetVehicles" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 text-[11px] font-semibold">
-              🔄 Resetar
-            </button>
           </div>
         </div>
+      </section>
+
+      <!-- Manutenção Preventiva por Odômetro -->
+      <section id="maintenanceCard" class="card p-3.5 space-y-2 border-emerald-500/30">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-xs font-bold text-emerald-300">🔧 Manutenção Preventiva por Odômetro</h3>
+            <p id="maintStatusSubtitle" class="text-[11px] text-slate-400">Acompanhe a próxima troca de óleo e revisão (a cada 10.000 km).</p>
+          </div>
+          <button id="btnMarkOilChanged" class="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold">
+            ✅ Registrar Troca Hoje
+          </button>
+        </div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+          <div id="maintOilBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div id="maintOilDetails" class="mono text-[11px] text-slate-300">Sem marco de troca salvo ainda.</div>
       </section>
 
       <section class="card p-3.5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-sm font-bold text-white">📊 Consolidado &amp; Configuração do Combustível (RS)</h2>
-            <p class="text-[11px] text-slate-400">Calibrado para a gasolina do Rio Grande do Sul (E32 / E30).</p>
+            <h2 class="text-sm font-bold text-white">📊 Consolidado &amp; Configuração do Combustível</h2>
+            <p class="text-[11px] text-slate-400">Ajuste a mistura e o preço médio do litro para o cálculo financeiro.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <select id="fuelBlendSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none">
@@ -648,6 +703,7 @@
         </div>
 
         <div id="periodSummaryGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs mono"></div>
+        <div id="costsBarChart" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5"></div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div class="flex flex-wrap items-center gap-2">
@@ -668,8 +724,13 @@
         <h3 class="text-sm font-bold text-white">Viagens Gravadas no Celular</h3>
         <div id="sessionsList" class="space-y-2 text-xs"></div>
         <details class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
-          <summary class="cursor-pointer text-[11px] font-semibold text-slate-400">Log técnico da porta serial</summary>
+          <summary class="cursor-pointer text-[11px] font-semibold text-slate-400">🛠️ Avançado: Log técnico serial &amp; reset de fábrica</summary>
           <div id="terminalOutput" class="mt-2 h-32 overflow-y-auto mono text-[10px] space-y-1 text-slate-300"></div>
+          <div class="mt-2 pt-2 border-t border-slate-800 flex justify-end">
+            <button id="btnResetVehicles" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 text-[11px] font-semibold">
+              🔄 Resetar veículos e configuração inicial
+            </button>
+          </div>
         </details>
       </section>
     </div>
@@ -879,6 +940,7 @@
     function summarizeSession(s) {
       const rows = s.rows || [];
       let distKm = 0, liters = 0, totalSec = 0, idleSec = 0, idleLiters = 0, stops = 0;
+      let cutOffSec = 0, harshSec = 0, maxCoolant = s.maxCoolant || 0;
       let moving = false;
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
@@ -888,6 +950,7 @@
         totalSec += dt;
         const spd = r.speed || 0;
         const flh = r.fuelLh || 0;
+        if ((r.coolant || 0) > maxCoolant) maxCoolant = r.coolant;
         distKm += spd * (dt / 3600);
         liters += flh * (dt / 3600);
         if (spd > 10) moving = true;
@@ -896,12 +959,20 @@
           idleLiters += flh * (dt / 3600);
           if (moving) { stops++; moving = false; }
         }
+        if (spd > 20 && typeof r.tps === 'number' && r.tps <= 1.5) cutOffSec += dt;
+        if ((r.tps || 0) > 65 || (r.rpm || 0) > 3200) harshSec += dt;
       }
+      const idlePct = totalSec > 0 ? (idleSec * 100) / totalSec : 0;
+      const harshPct = totalSec > 0 ? (harshSec * 100) / totalSec : 0;
+      const cutPct = totalSec > 0 ? (cutOffSec * 100) / totalSec : 0;
+      const ecoScore = Math.max(15, Math.min(100, Math.round(85 - idlePct * 0.45 - harshPct * 1.1 + Math.min(15, cutPct * 0.8))));
+      const coldTrip = rows.length > 5 && maxCoolant > 0 && maxCoolant < 75;
       const gpsRows = rows.filter((r) => r.lat && r.lon);
       return {
         distKm, liters, idleLiters, stops,
+        cutOffSec, ecoScore, coldTrip, maxCoolant,
         totalMin: totalSec / 60,
-        idlePct: totalSec > 0 ? (idleSec * 100) / totalSec : 0,
+        idlePct,
         kml: liters > 0.005 && distKm > 0.05 ? distKm / liters : 0,
         startGps: gpsRows[0] || null,
         endGps: gpsRows[gpsRows.length - 1] || null
@@ -1778,7 +1849,19 @@
       const elHist = document.getElementById('elHistoryStrip');
 
       if (elSrc) elSrc.textContent = `Fonte: ${source}`;
-      if (elHist) elHist.textContent = `Histórico recente: ${el.voltageHistory.join(' • ')}`;
+      if (elHist) elHist.textContent = `Últimas leituras: ${el.voltageHistory.slice(-5).join(' • ')}`;
+      const sparkEl = document.getElementById('elVoltageSparkline');
+      if (sparkEl && el.voltageHistory.length >= 2) {
+        const vals = el.voltageHistory.map((item) => parseFloat(item.split(':').pop()) || 12.6);
+        const minV = Math.min(9.5, ...vals), maxV = Math.max(15.0, ...vals);
+        const w = 280, h = 44;
+        const pts = vals.map((v, i) => {
+          const x = (i / (vals.length - 1)) * w;
+          const y = h - 4 - ((v - minV) / (maxV - minV || 1)) * (h - 8);
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        sparkEl.innerHTML = `<svg viewBox="0 0 ${w} ${h}" class="w-full h-11"><polyline fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${pts}" /></svg>`;
+      }
 
       const batRef = el.keyOffVolt || el.pin16Volt || volt;
       if (elBat && elSoc) {
@@ -1886,6 +1969,19 @@
     window.removeKnownPlace = function(idx) {
       appState.knownPlaces.splice(idx, 1);
       saveKnownPlaces();
+    };
+
+    window.saveKnownPlaceDirect = function(name) {
+      if (!appState.gps?.lat || !appState.gps?.lon) return showToast('Aguardando sinal de GPS para salvar a coordenada.');
+      const existing = appState.knownPlaces.find((p) => p.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        existing.lat = +appState.gps.lat;
+        existing.lon = +appState.gps.lon;
+      } else {
+        appState.knownPlaces.push({ id: 'plc_' + Date.now(), name, lat: +appState.gps.lat, lon: +appState.gps.lon });
+      }
+      saveKnownPlaces();
+      showToast(`📍 "${name}" salvo na sua posição atual!`);
     };
 
     function renderAutoRoutePatterns() {
@@ -2032,6 +2128,70 @@
           <div class="text-amber-300 text-[10px] mt-0.5">Parado no trânsito: R$ ${c.d.idleCost.toFixed(2)} (${c.d.stops} paradas)</div>
         </div>
       `).join('');
+      renderCostsBarChart(price);
+      renderMaintenanceCard();
+    }
+
+    function renderCostsBarChart(price) {
+      const box = document.getElementById('costsBarChart');
+      if (!box) return;
+      const recent = appState.sessions.filter((s) => s.rows?.length > 2).slice(0, 7).reverse();
+      if (!recent.length) {
+        box.innerHTML = '<div class="text-[11px] text-slate-400">O gráfico comparativo das últimas viagens aparecerá aqui assim que você gravar trajetos.</div>';
+        return;
+      }
+      const items = recent.map((s) => {
+        const sum = summarizeSession(s);
+        return {
+          label: (s.routeTag || s.label || '').slice(0, 10),
+          cost: sum.liters * price,
+          kml: sum.kml
+        };
+      });
+      const maxCost = Math.max(1, ...items.map((x) => x.cost));
+      box.innerHTML = `
+        <div class="text-[11px] font-bold text-slate-300 mb-2">📊 Gasto &amp; Eficiência — Últimas ${items.length} Viagens</div>
+        <div class="grid grid-cols-${items.length} gap-1.5 items-end h-20 pt-2">
+          ${items.map((x) => {
+            const pct = Math.max(12, Math.round((x.cost / maxCost) * 100));
+            return `
+              <div class="flex flex-col items-center justify-end h-full gap-1">
+                <span class="mono text-[9px] text-emerald-300">${x.kml > 0 ? x.kml.toFixed(1) : '--'}</span>
+                <div class="w-full max-w-[28px] bg-cyan-500/70 rounded-t" style="height:${pct}%" title="R$ ${x.cost.toFixed(2)}"></div>
+                <span class="mono text-[9px] text-slate-400 truncate max-w-full">${x.cost > 0 ? 'R$' + x.cost.toFixed(0) : '0'}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderMaintenanceCard() {
+      const bar = document.getElementById('maintOilBar');
+      const det = document.getElementById('maintOilDetails');
+      if (!bar || !det) return;
+      const odo = getEstimatedCurrentOdometer();
+      const lastOilKm = parseFloat(localStorage.getItem('openobd_oil_last_km') || '');
+      if (!lastOilKm || isNaN(lastOilKm)) {
+        bar.style.width = '0%';
+        det.textContent = odo
+          ? `Odômetro atual estimado: ${odo.toLocaleString('pt-BR')} km. Toque em "Registrar Troca Hoje" após trocar o óleo.`
+          : 'Registre um abastecimento ou conecte o scanner para acompanhar os 10.000 km da revisão.';
+        return;
+      }
+      if (!odo) {
+        det.textContent = `Última troca registrada em ${lastOilKm.toLocaleString('pt-BR')} km.`;
+        return;
+      }
+      const driven = Math.max(0, odo - lastOilKm);
+      const interval = 10000;
+      const pct = Math.min(100, Math.round((driven / interval) * 100));
+      const remaining = interval - driven;
+      bar.style.width = `${pct}%`;
+      bar.className = `h-full transition-all duration-300 ${remaining <= 1000 ? 'bg-rose-500' : remaining <= 2500 ? 'bg-amber-400' : 'bg-emerald-500'}`;
+      det.innerHTML = remaining > 0
+        ? `Rodados <b>${driven.toLocaleString('pt-BR')} km</b> desde a troca (${lastOilKm.toLocaleString('pt-BR')} km) • Faltam <b class="text-emerald-300">${remaining.toLocaleString('pt-BR')} km</b> para próxima revisão.`
+        : `<b class="text-rose-300">⚠️ Revisão vencida há ${Math.abs(remaining).toLocaleString('pt-BR')} km!</b> (Troca anterior: ${lastOilKm.toLocaleString('pt-BR')} km)`;
     }
 
     function renderRouteGroupStats() {
@@ -2121,6 +2281,12 @@
       L.circleMarker(bounds[0], { radius: 6, color: '#38bdf8', fillOpacity: 1 }).bindPopup('Início').addTo(appState.leafletLayer);
       L.circleMarker(bounds[bounds.length - 1], { radius: 6, color: '#a855f7', fillOpacity: 1 }).bindPopup('Fim').addTo(appState.leafletLayer);
       appState.leafletMap.fitBounds(bounds, { padding: [20, 20] });
+      const sumBox = document.getElementById('mapSelectedSummary');
+      if (sumBox) {
+        const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
+        const sum = summarizeSession(s);
+        sumBox.innerHTML = `📍 <b>${s.routeTag || s.label}</b> • ${sum.distKm.toFixed(2)} km • ${sum.totalMin.toFixed(1)} min • ${sum.kml.toFixed(1)} km/L • R$ ${(sum.liters * price).toFixed(2)} • ${sum.stops} paradas • Eco ${sum.ecoScore}/100`;
+      }
     }
 
     window.openInGoogleMaps = (id) => {
@@ -2148,18 +2314,22 @@
       box.innerHTML = appState.sessions.map((s) => {
         const isCur = s.id === appState.currentSessionId;
         const sum = summarizeSession(s);
+        const ecoColor = sum.ecoScore >= 80 ? 'text-emerald-300 bg-emerald-500/15' : sum.ecoScore >= 60 ? 'text-amber-300 bg-amber-500/15' : 'text-rose-300 bg-rose-500/15';
         return `
           <div class="bg-slate-950 border ${isCur ? 'border-emerald-500/50' : 'border-slate-800'} rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
                 <span>${s.routeTag ? `[${s.routeTag}] ` : ''}${s.label}</span>
                 ${isCur ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">ATIVA</span>' : ''}
+                <span class="text-[10px] px-1.5 py-0.5 rounded ${ecoColor} font-bold">Eco ${sum.ecoScore}</span>
+                ${sum.coldTrip ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300">❄️ Motor frio</span>' : ''}
               </div>
               <div class="mono text-[11px] text-slate-400 mt-0.5">
-                ${sum.distKm.toFixed(2)} km • ${sum.kml.toFixed(1)} km/L • R$ ${(sum.liters * price).toFixed(2)} • ${sum.stops} paradas (${s.rows.length} pts)
+                ${sum.distKm.toFixed(2)} km • ${sum.kml.toFixed(1)} km/L • R$ ${(sum.liters * price).toFixed(2)} • ${sum.stops} paradas${sum.cutOffSec >= 5 ? ` • Cut-Off ${Math.round(sum.cutOffSec)}s` : ''}
               </div>
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="renameSessionTag('${s.id}')" class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold" title="Renomear rota">✏️</button>
               <button onclick="openInGoogleMaps('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-semibold">🗺️ Maps</button>
               <button onclick="analyzeSession('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-semibold">📈 Analisar</button>
               <button onclick="downloadSessionCsv('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-semibold">📊 CSV</button>
@@ -2168,6 +2338,17 @@
           </div>`;
       }).join('');
     }
+
+    window.renameSessionTag = (id) => {
+      const s = appState.sessions.find((x) => x.id === id);
+      if (!s) return;
+      const next = prompt('Nome/Etiqueta desta rota (ex: Casa ➔ Colégio do Caio):', s.routeTag || '');
+      if (next === null) return;
+      s.routeTag = next.trim();
+      saveSessions();
+      renderKnownPlaces();
+      showToast('Etiqueta da rota atualizada!');
+    };
 
     window.downloadSessionCsv = (id) => {
       const s = appState.sessions.find((x) => x.id === id);
@@ -2603,7 +2784,25 @@
 
         // Atualiza UI Cockpit & ECU
         document.getElementById('mGear').textContent = m.gear;
-        document.getElementById('mEcoHint').textContent = m.rpm > 3100 ? '⬆️ Pede marcha' : 'Câmbio Manual';
+        const vehTrans = getActiveVehicle()?.transmission || 'MANUAL_5';
+        const isAutoTrans = vehTrans.startsWith('AUTO') || vehTrans === 'CVT';
+        document.getElementById('mEcoHint').textContent = isAutoTrans
+          ? (vehTrans === 'CVT' ? 'Câmbio CVT' : 'Automático')
+          : (m.rpm > 3100 ? '⬆️ Pede marcha' : 'Câmbio Manual');
+        if (engNow) {
+          const advDet = document.getElementById('connAdvancedDetails');
+          if (advDet?.open) advDet.open = false;
+        }
+        const ecoBar = document.getElementById('cockpitEcoBar');
+        const ecoLbl = document.getElementById('cockpitEcoLabel');
+        if (ecoBar && ecoLbl) {
+          const isCutOff = m.speed > 20 && m.tps <= 1.5;
+          const ecoPct = isCutOff ? 100 : Math.max(15, Math.min(100, Math.round(95 - (m.tps * 0.7) - Math.max(0, m.rpm - 2400) / 40)));
+          ecoBar.style.width = `${ecoPct}%`;
+          ecoBar.className = `h-full transition-all duration-300 ${isCutOff ? 'bg-cyan-400' : ecoPct >= 70 ? 'bg-emerald-500' : ecoPct >= 45 ? 'bg-amber-400' : 'bg-rose-500'}`;
+          ecoLbl.textContent = isCutOff ? '⚡ Cut-Off (Consumo Zero)' : `Eco ao vivo: ${ecoPct}%`;
+          ecoLbl.className = `font-bold ${isCutOff ? 'text-cyan-300' : ecoPct >= 70 ? 'text-emerald-300' : ecoPct >= 45 ? 'text-amber-300' : 'text-rose-300'}`;
+        }
         document.getElementById('mRpm').textContent = m.rpm;
         document.getElementById('mSpeed').textContent = m.speed;
         document.getElementById('mGpsSpeed').textContent = `GPS: ${appState.gps?.spd ?? '--'} km/h`;
@@ -2650,6 +2849,25 @@
             const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
             const sum = summarizeSession(sess);
             document.getElementById('mStopsSummary').textContent = `${sum.stops} paradas • R$ ${(sum.idleLiters * price).toFixed(2)}`;
+            const liveStrip = document.getElementById('cockpitLiveTripStrip');
+            if (liveStrip) {
+              liveStrip.textContent = `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)} • ${sum.kml > 0 ? sum.kml.toFixed(1) + ' km/L' : '--'}`;
+            }
+            const pTherm = document.getElementById('pillThermostat');
+            const pStft = document.getElementById('pillStft');
+            const pCat = document.getElementById('pillCat');
+            if (pTherm) {
+              pTherm.textContent = sess.secTo80 !== null ? (sess.secTo80 > 600 ? `Lenta (${Math.round(sess.secTo80 / 60)}m)` : `OK (${sess.secTo80}s)`) : `${m.coolant}°C`;
+              pTherm.className = sess.secTo80 > 600 ? 'text-amber-300' : 'text-emerald-300';
+            }
+            if (pStft) {
+              pStft.textContent = `${m.stft > 0 ? '+' : ''}${m.stft}%`;
+              pStft.className = Math.abs(m.stft) <= 8 ? 'text-emerald-300' : Math.abs(m.stft) <= 15 ? 'text-amber-300' : 'text-rose-300';
+            }
+            if (pCat && m.o2v > 0) {
+              pCat.textContent = `${m.o2v}V`;
+              pCat.className = m.o2v >= 0.4 && m.o2v <= 0.85 ? 'text-emerald-300' : 'text-amber-300';
+            }
             if (sess.rows.length % 6 === 0) {
               // Atualiza automaticamente a mistura (Gasolina % vs Álcool %) do tanque atual quando o motor está quente em Closed Loop
               if (m.coolant >= 75 && m.fuelSys === 'Closed Loop') {
@@ -2825,6 +3043,20 @@
         if (document.getElementById('refuelPriceInput')) document.getElementById('refuelPriceInput').value = e.target.value;
         renderAllSessionViews();
       });
+      document.getElementById('refuelPriceInput')?.addEventListener('change', (e) => {
+        localStorage.setItem('civic2007_fuel_price', e.target.value);
+        if (document.getElementById('fuelPriceInput')) document.getElementById('fuelPriceInput').value = e.target.value;
+        renderAllSessionViews();
+      });
+      document.getElementById('btnMarkOilChanged')?.addEventListener('click', () => {
+        const est = getEstimatedCurrentOdometer();
+        const val = prompt('Informe o odômetro (km) da troca de óleo / revisão:', est ? String(est) : '');
+        const km = parseFloat((val || '').replace(',', '.'));
+        if (!km || isNaN(km)) return;
+        localStorage.setItem('openobd_oil_last_km', String(Math.round(km)));
+        renderMaintenanceCard();
+        showToast(`Troca registrada em ${Math.round(km).toLocaleString('pt-BR')} km!`);
+      });
       document.getElementById('fuelBlendSelect').addEventListener('change', (e) => {
         localStorage.setItem('civic2007_fuel_blend', e.target.value);
       });
@@ -2940,7 +3172,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.1.0',
+          version: '1.2.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

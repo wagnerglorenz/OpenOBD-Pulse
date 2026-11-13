@@ -4,6 +4,21 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.2.0] - 2026-11-13
+### Melhorado & Adicionado
+- **Fluidez Mobile & Modo Direção Limpo (`🚗 Cockpit`)**:
+  - Cabeçalho compactado em 1 única linha no celular.
+  - Recolhimento automático das opções avançadas de pareamento e rota manual ao entrar em `Estado 4/4 (Motor Ligado)`.
+  - Barra ao vivo com **Trajeto Atual (km, min, R$, km/L)**, **Eco-Score instantâneo**, detecção de **Cut-Off (consumo zero)** e indicação dinâmica do tipo de câmbio do veículo ativo (`Manual`, `Automático`, `CVT`).
+- **Navegação Segmentada `⚡ Elétrica | 🔬 ECU & Matriz` + Gráficos SVG**:
+  - Alternância em 1 toque entre Bateria/Alternador e ECU/Sensores.
+  - Sparkline SVG de tensão elétrica e **Resumo Semafórico do Motor** (Termostática, Mistura STFT, Catalisador e Falhas).
+- **Chips Rápidos em `🗺️ Rotas` & Novos Insights em `📊 Custos`**:
+  - Botões de 1 toque (`🏠 Casa`, `🏫 Escola`, `🏢 Trabalho`, `🛒 Mercado`) + resumo da viagem selecionada abaixo do mapa.
+  - Gráfico comparativo de gastos/eficiência das últimas 7 viagens, **Manutenção Preventiva por Odômetro** (troca de óleo 10.000 km), badge de **Eco-Score**, **Cut-Off**, **Motor Frio (<75°C)** e renomeação rápida da etiqueta da rota.
+
+---
+
 ## [v1.1.0] - 2026-11-13
 ### Adicionado
 - **Rotas Automáticas & Reconhecimento de Padrões (Geo-cluster)**:
