@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Civic 2007 OBD-II v2.0 — Telemetria, Mistura &amp; Viagens</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <meta name="theme-color" content="#0b0f17" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    html, body { overscroll-behavior-y: none; overscroll-behavior: none; touch-action: pan-y; }
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: #0b0f17; color: #e2e8f0; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .card { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 1rem; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-slate-900/95 sticky top-0 z-40 backdrop-blur border-b border-slate-800 px-4 py-3">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-base sm:text-lg text-white">Civic 2007 OBD-II v2.0</h1>
+          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Somente Leitura</span>
+        </div>
+        <p class="text-xs text-slate-400">R18A1 • CAN 29-bit 500k (ATSP7) • GPS &amp; Gravação Automática</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnInstallApp" class="hidden px-2.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲 Instalar App</button>
+        <span id="gpsBadge" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-[11px] text-slate-300">📍 GPS: Buscando...</span>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium">
+          <span id="connDot" class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
+          <span id="connStatusText">Desconectado</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div id="toastBanner" class="hidden fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 bg-slate-800 border border-blue-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
+    <span id="toastMessage" class="text-xs sm:text-sm font-medium">Pronto.</span>
+    <button id="closeToastBtn" class="text-xs font-bold px-2 py-1 bg-slate-700 rounded">OK</button>
+  </div>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 space-y-4">
+    <!-- 1. Conexão Direta -->
+    <section class="card p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">1. Scanner OBD-II (Bluetooth)</h2>
+          <p class="text-xs text-slate-400">Tenta conectar automaticamente ao abrir; ao conectar, inicia o Ao Vivo.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnConnectSerial" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm">
+            🔌 Conectar OBDII (SPP)
+          </button>
+          <button id="btnConnectBLE" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold">
+            BLE
+          </button>
+        </div>
+      </div>
+      <div id="connBanner" class="rounded-xl px-3 py-2.5 text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200">
+        🟡 Aguardando conexão — toque em "Conectar OBDII (SPP)" e selecione OBDII.
+      </div>
+    </section>
+
+    <!-- 1B. Modo Planejamento: Análise de Trajeto (Caminho A / B) -->
+    <section class="card p-4 space-y-3 border-cyan-500/30">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">🛣️ Análise de Trajeto (Caminho A vs Caminho B)</h2>
+          <p class="text-xs text-slate-400">Nomeie o percurso na garagem, clique em Iniciar, faça o trajeto e clique em Encerrar.</p>
+        </div>
+        <span id="routeStatusBadge" class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Nenhum trajeto manual ativo</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+        <input id="routeNameInput" type="text" value="Caminho A" placeholder="Ex: Caminho A, Caminho B..." class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none" />
+        <select id="routeTypeSelect" class="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none">
+          <option value="IDA_VOLTA">Ida e Volta (A→B→A)</option>
+          <option value="TRECHO_UNICO">Trecho Único (A→B)</option>
+        </select>
+        <button id="btnToggleRoute" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm">
+          ▶ Iniciar Análise de Trajeto
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. Painel Ao Vivo (Injeção, Mistura Wideband, Motor, GPS) -->
+    <section class="card p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">2. Painel Ao Vivo — Injeção, Queima &amp; Motor</h2>
+          <p class="text-xs text-slate-400">
+            Sessão atual: <span id="sessionLabel" class="mono text-cyan-300">Aguardando partida/conexão</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnToggleLive" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-bold">
+            ▶ Ligar Ao Vivo
+          </button>
+        </div>
+      </div>
+
+      <!-- Linha 1: Motor & Consumo -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Rotação</span>
+          <span id="mRpm" class="mono text-lg font-bold text-cyan-400">--</span> <span class="text-[11px] text-slate-500">RPM</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Velocidade OBD / GPS</span>
+          <span id="mSpeed" class="mono text-lg font-bold text-white">--</span> <span class="text-[11px] text-slate-500">km/h</span>
+          <span id="mGpsSpeed" class="mono text-[10px] text-slate-400 block">GPS: -- km/h</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Consumo Real</span>
+          <span id="mFuelLh" class="mono text-base font-bold text-amber-300">--</span> <span class="text-[11px] text-slate-500">L/h</span>
+          <span id="mFuelKml" class="mono text-[11px] text-emerald-400 block">-- km/L</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Lambda Real (0134)</span>
+          <span id="mLambdaReal" class="mono text-lg font-bold text-emerald-300">--</span>
+          <span id="mAfr" class="mono text-[10px] text-slate-400 block">AFR: --</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Lambda Alvo (0144)</span>
+          <span id="mLambdaCmd" class="mono text-lg font-bold text-sky-300">--</span>
+          <span id="mLambdaDiff" class="mono text-[10px] text-slate-400 block">Desvio: --</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Correção STFT (0106)</span>
+          <span id="mStft" class="mono text-lg font-bold text-purple-300">--</span> <span class="text-[11px] text-slate-500">%</span>
+          <span id="mFuelSys" class="text-[10px] text-slate-400 block truncate">--</span>
+        </div>
+      </div>
+
+      <!-- Linha 2: Ignição, Ar, Borboleta, Temperaturas & Elétrica -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Avanço Ignição (010E)</span>
+          <span id="mTiming" class="mono text-base font-bold text-sky-300">--</span> <span class="text-[11px] text-slate-500">°</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Carga / Absoluta</span>
+          <span id="mLoad" class="mono text-base font-bold text-white">--%</span>
+          <span id="mAbsLoad" class="mono text-[10px] text-slate-400 block">Abs: --%</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">MAP / MAF</span>
+          <span id="mMap" class="mono text-sm font-bold text-white">-- kPa</span>
+          <span id="mMaf" class="mono text-[10px] text-slate-400 block">-- g/s</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Pedal / Borboleta</span>
+          <span id="mTps" class="mono text-sm font-bold text-white">TPS --%</span>
+          <span id="mPedal" class="mono text-[10px] text-slate-400 block">Pedal --%</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Água / Ar (IAT)</span>
+          <span id="mCoolant" class="mono text-base font-bold text-orange-300">--°C</span>
+          <span id="mIat" class="mono text-[10px] text-slate-400 block">Ar: --°C</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Tensão ECU / Sonda 2</span>
+          <span id="mEcuVolt" class="mono text-sm font-bold text-emerald-400">-- V</span>
+          <span id="mO2" class="mono text-[10px] text-slate-400 block">B1S2: -- V</span>
+        </div>
+      </div>
+
+      <!-- Matriz de Operação (Reconstrução Empírica do Mapa) -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-bold text-white">Mapa Real de Operação (RPM × Carga → Avanço° | STFT% | Lambda)</span>
+          <span id="mSamples" class="mono text-[11px] text-cyan-300">0 pts na sessão</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[11px] mono text-left border-collapse">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="py-1.5 pr-2">RPM \ Carga</th>
+                <th class="py-1.5 px-2">&lt; 25%</th>
+                <th class="py-1.5 px-2">25–50%</th>
+                <th class="py-1.5 px-2">50–75%</th>
+                <th class="py-1.5 px-2">&gt; 75%</th>
+              </tr>
+            </thead>
+            <tbody id="opMatrixBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Diagnóstico / Falhas / Todos os Sistemas -->
+    <section class="card p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">3. Diagnóstico da ECU &amp; Check-up dos Sistemas</h2>
+          <p class="text-xs text-slate-400">Pausa o Ao Vivo automaticamente, analisa todos os sistemas do Civic e retoma.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnDiagScan" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs">
+            🔍 Falhas e Contadores
+          </button>
+          <button id="btnAllSystems" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm">
+            🩺 Analisar Todos os Sistemas
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Luz Injeção (MIL)</span>
+          <span id="diagMil" class="font-bold text-white">--</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Falhas (03 / 07)</span>
+          <span id="diagDtcs" class="mono font-bold text-emerald-400">--</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Dist. Pós-Reset (0131)</span>
+          <span id="diagDistReset" class="mono font-bold text-cyan-300">-- km</span>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <span class="text-[11px] text-slate-400 block">Aquec. / Dist. MIL</span>
+          <span id="diagWarmups" class="mono font-bold text-white">--</span>
+        </div>
+      </div>
+      <div id="allSystemsOutput" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mono"></div>
+    </section>
+
+    <!-- 4. Sessões Salvas no Celular (por Partida do Motor) -->
+    <section class="card p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">4. Viagens / Partidas Salvas no Celular</h2>
+          <p class="text-xs text-slate-400">Cada vez que o motor liga, uma nova sessão com data/hora e GPS é gravada automaticamente.</p>
+        </div>
+      </div>
+
+      <div id="sessionsList" class="space-y-2 text-xs">
+        <div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhuma viagem gravada ainda.</div>
+      </div>
+
+      <details class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+        <summary class="cursor-pointer text-xs font-semibold text-slate-400">Log técnico da conexão (opcional)</summary>
+        <div id="terminalOutput" class="mt-2 h-40 overflow-y-auto mono text-[11px] space-y-1 text-slate-300"></div>
+      </details>
+    </section>
+
+    <!-- 5. Gerador de Análises, Consolidado & Comparador -->
+    <section class="card p-4 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">5. Análise Automática, Consolidado &amp; Comparação A vs B</h2>
+          <p class="text-xs text-slate-400">Resumo diário/semanal/mensal, comparação de rotas com critério GPS e diagnóstico do motor.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="text-[11px] text-slate-300 flex items-center gap-1.5 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5">
+            R$/L:
+            <input id="fuelPriceInput" type="number" step="0.01" value="6.10" class="w-14 bg-transparent text-white font-bold mono outline-none" />
+          </label>
+          <button id="btnAnalyzeAll" class="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs">📈 Analisar Todas</button>
+          <button id="btnCopyAnalysis" class="px-3 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs">📋 Copiar Análise</button>
+        </div>
+      </div>
+
+      <!-- Consolidado Hoje / Semana / Mês -->
+      <div id="periodSummaryGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs mono"></div>
+
+      <!-- Comparador Caminho A vs Caminho B -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div class="text-xs font-bold text-cyan-300">⚖️ Comparar Dois Trajetos (Ex: Caminho A vs Caminho B)</div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <select id="cmpSelectA" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"></select>
+          <select id="cmpSelectB" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"></select>
+          <button id="btnCompareRoutes" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">Comparar Trajetos</button>
+        </div>
+        <div id="compareOutput" class="text-xs text-slate-300">Selecione dois trajetos gravados para comparar consumo, tempo e trânsito.</div>
+      </div>
+
+      <div id="analysisOutput" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs space-y-2 text-slate-300">
+        Grave pelo menos 1 viagem e clique em <strong>Analisar</strong> para ver o diagnóstico completo aqui.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
+    const KNOWN_OBD_SERVICES = [
+      '0000ffe0-0000-1000-8000-00805f9b34fb',
+      '0000fff0-0000-1000-8000-00805f9b34fb',
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      '000018f0-0000-1000-8000-00805f9b34fb',
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    ];
+    const STORAGE_KEY = 'civic2007_obd_sessions_v2';
+
+    const appState = {
+      mode: 'DISCONNECTED',
+      bleWriteChar: null,
+      serialPort: null,
+      rxBuffer: '',
+      pendingResolve: null,
+      liveRunning: false,
+      diagBusy: false,
+      gps: null,
+      gpsWatchId: null,
+      sessions: [],
+      currentSessionId: null,
+      activeManualRouteId: null,
+      wasEngineRunning: false,
+      matrix: {},
+      cycleCount: 0,
+      lastMetrics: {
+        rpm: 0, speed: 0, maf: 0, fuelLh: 0, fuelKml: 0,
+        lambdaReal: 0, afr: 0, lambdaCmd: 0, lambdaDiff: 0,
+        stft: 0, fuelSys: '--', timing: 0, load: 0, absLoad: 0,
+        map: 0, tps: 0, pedal: 0, coolant: 0, iat: 0,
+        ecuVolt: 0, o2v: 0, baro: 0, egr: 0, evap: 0
+      }
+    };
+
+    function showToast(msg) {
+      const b = document.getElementById('toastBanner');
+      document.getElementById('toastMessage').textContent = msg;
+      b.classList.remove('hidden');
+      clearTimeout(window._t);
+      window._t = setTimeout(() => b.classList.add('hidden'), 3500);
+    }
+
+    function addLog(dir, raw) {
+      const ts = new Date().toTimeString().split(' ')[0];
+      const term = document.getElementById('terminalOutput');
+      const div = document.createElement('div');
+      div.className = dir === 'ERR' ? 'text-red-400' : dir === 'SYS' ? 'text-cyan-300' : 'text-slate-400';
+      div.textContent = `[${ts}] ${dir}: ${raw}`;
+      term.appendChild(div);
+      if (term.children.length > 200) term.removeChild(term.firstChild);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function cleanElmText(raw) {
+      return raw.replace(/SEARCHING\.+/gi, '').replace(/\r/g, ' ').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function extractHexBytes(resp, prefixBytes) {
+      const tokens = cleanElmText(resp).split(' ').filter((t) => /^[0-9A-F]{2}$/i.test(t));
+      const idx = tokens.findIndex((_, i) => prefixBytes.every((p, j) => tokens[i + j]?.toUpperCase() === p));
+      if (idx === -1) return null;
+      return tokens.slice(idx + prefixBytes.length).map((h) => parseInt(h, 16));
+    }
+
+    function decodeDtcBytes(resp, headerByte) {
+      const tokens = cleanElmText(resp).split(' ').filter((t) => /^[0-9A-F]{2}$/i.test(t));
+      const idx = tokens.findIndex((t) => t.toUpperCase() === headerByte);
+      if (idx === -1) return [];
+      const data = tokens.slice(idx + 1);
+      const codes = [];
+      const sysMap = ['P', 'C', 'B', 'U'];
+      for (let i = 0; i + 1 < data.length; i += 2) {
+        const a = parseInt(data[i], 16), b = parseInt(data[i + 1], 16);
+        if (a === 0 && b === 0) continue;
+        codes.push(`${sysMap[(a >> 6) & 3]}${(a >> 4) & 3}${(a & 15).toString(16).toUpperCase()}${(b >> 4).toString(16).toUpperCase()}${(b & 15).toString(16).toUpperCase()}`);
+      }
+      return codes;
+    }
+
+    function loadSessions() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        appState.sessions = raw ? JSON.parse(raw) : [];
+      } catch { appState.sessions = []; }
+      const savedPrice = localStorage.getItem('civic2007_fuel_price');
+      if (savedPrice) document.getElementById('fuelPriceInput').value = savedPrice;
+      renderSessions();
+    }
+
+    function saveSessions() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.sessions));
+      } catch (e) {
+        addLog('ERR', 'Armazenamento cheio no celular: ' + e.message);
+      }
+      renderPeriodSummaries();
+      populateCompareSelects();
+    }
+
+    function startNewSession(reason, routeTag = '', routeType = '') {
+      const now = new Date();
+      const id = 'sess_' + now.getTime();
+      const sess = {
+        id,
+        startedAt: now.toISOString(),
+        endedAt: now.toISOString(),
+        label: now.toLocaleString('pt-BR'),
+        reason,
+        routeTag,
+        routeType,
+        maxRpm: 0,
+        maxSpeed: 0,
+        maxCoolant: 0,
+        rows: []
+      };
+      appState.sessions.unshift(sess);
+      if (appState.sessions.length > 50) appState.sessions.pop();
+      appState.currentSessionId = id;
+      appState.matrix = {};
+      document.getElementById('sessionLabel').textContent = `${routeTag ? routeTag + ' • ' : ''}${sess.label}`;
+      saveSessions();
+      renderSessions();
+      return sess;
+    }
+
+    function haversineMeters(lat1, lon1, lat2, lon2) {
+      const toRad = (v) => (v * Math.PI) / 180;
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function summarizeSession(s) {
+      const rows = s.rows || [];
+      let distKm = 0, liters = 0, totalSec = 0, idleSec = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const prev = i > 0 ? rows[i - 1] : null;
+        let dt = prev ? (new Date(r.ts) - new Date(prev.ts)) / 1000 : 1;
+        if (dt <= 0 || dt > 15) dt = 1;
+        totalSec += dt;
+        distKm += (r.speed || 0) * (dt / 3600);
+        liters += (r.fuelLh || 0) * (dt / 3600);
+        if ((r.speed || 0) <= 2 && (r.rpm || 0) > 300) idleSec += dt;
+      }
+      const gpsRows = rows.filter((r) => r.lat && r.lon);
+      return {
+        distKm,
+        liters,
+        totalMin: totalSec / 60,
+        idlePct: totalSec > 0 ? (idleSec * 100) / totalSec : 0,
+        kml: liters > 0.005 && distKm > 0.05 ? distKm / liters : 0,
+        startGps: gpsRows[0] || null,
+        endGps: gpsRows[gpsRows.length - 1] || null
+      };
+    }
+
+    function renderPeriodSummaries() {
+      const box = document.getElementById('periodSummaryGrid');
+      if (!box) return;
+      const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.10') || 6.10;
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startWeek = now.getTime() - 7 * 86400000;
+      const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+      const calc = (minTs) => {
+        let km = 0, lit = 0, count = 0;
+        for (const s of appState.sessions) {
+          if (new Date(s.startedAt).getTime() >= minTs) {
+            const sum = summarizeSession(s);
+            km += sum.distKm;
+            lit += sum.liters;
+            count++;
+          }
+        }
+        return { km, lit, cost: lit * price, kml: lit > 0.01 ? km / lit : 0, count };
+      };
+
+      const cards = [
+        { title: 'Hoje', d: calc(startToday) },
+        { title: 'Últimos 7 Dias', d: calc(startWeek) },
+        { title: 'Mês Atual', d: calc(startMonth) }
+      ];
+      box.innerHTML = cards.map((c) => `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          <div class="text-slate-400 text-[11px]">${c.title} (${c.d.count} viagens)</div>
+          <div class="text-white font-bold text-sm mt-0.5">${c.d.km.toFixed(1)} km • ${c.d.lit.toFixed(2)} L</div>
+          <div class="text-emerald-300 text-[11px]">R$ ${c.d.cost.toFixed(2)} • Média ${c.d.kml.toFixed(1)} km/L</div>
+        </div>
+      `).join('');
+    }
+
+    function populateCompareSelects() {
+      const selA = document.getElementById('cmpSelectA');
+      const selB = document.getElementById('cmpSelectB');
+      if (!selA || !selB) return;
+      const opts = appState.sessions.map((s) => `<option value="${s.id}">${s.routeTag ? s.routeTag + ' — ' : ''}${s.label} (${s.rows.length} pts)</option>`).join('');
+      const prevA = selA.value, prevB = selB.value;
+      selA.innerHTML = opts;
+      selB.innerHTML = opts;
+      if (prevA) selA.value = prevA;
+      if (prevB) selB.value = prevB;
+      else if (appState.sessions.length > 1) selB.selectedIndex = 1;
+    }
+
+    window.openInGoogleMaps = (id) => {
+      const s = appState.sessions.find((x) => x.id === id);
+      if (!s) return;
+      const pts = (s.rows || []).filter((r) => r.lat && r.lon);
+      if (pts.length < 2) return showToast('Essa viagem não tem pontos GPS suficientes.');
+      const orig = `${pts[0].lat},${pts[0].lon}`;
+      const dest = `${pts[pts.length - 1].lat},${pts[pts.length - 1].lon}`;
+      const step = Math.max(1, Math.floor(pts.length / 8));
+      const wps = [];
+      for (let i = step; i < pts.length - 1 && wps.length < 7; i += step) {
+        wps.push(`${pts[i].lat},${pts[i].lon}`);
+      }
+      const url = `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving${wps.length ? '&waypoints=' + encodeURIComponent(wps.join('|')) : ''}`;
+      window.open(url, '_blank');
+    };
+
+    function getCurrentSession() {
+      return appState.sessions.find((s) => s.id === appState.currentSessionId) || null;
+    }
+
+    function renderSessions() {
+      const box = document.getElementById('sessionsList');
+      if (!appState.sessions.length) {
+        box.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhuma viagem gravada ainda.</div>';
+        return;
+      }
+      box.innerHTML = appState.sessions.map((s) => {
+        const isCur = s.id === appState.currentSessionId;
+        return `
+          <div class="bg-slate-950 border ${isCur ? 'border-emerald-500/50' : 'border-slate-800'} rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="font-bold text-white flex flex-wrap items-center gap-2">
+                <span>${s.routeTag ? `[${s.routeTag}] ` : ''}${s.label}</span>
+                ${isCur ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">ATIVA</span>' : ''}
+              </div>
+              <div class="mono text-[11px] text-slate-400 mt-0.5">
+                ${s.rows.length} amostras • RPM máx: ${s.maxRpm} • Vel máx: ${s.maxSpeed} km/h • Água máx: ${s.maxCoolant}°C
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button onclick="openInGoogleMaps('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-semibold">🗺️ Maps</button>
+              <button onclick="analyzeSession('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 font-semibold">📈 Analisar</button>
+              <button onclick="downloadSessionCsv('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 font-semibold">📊 CSV</button>
+              <button onclick="deleteSession('${s.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">🗑️</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    window.downloadSessionCsv = (id) => {
+      const s = appState.sessions.find((x) => x.id === id);
+      if (!s || !s.rows.length) return showToast('Sessão sem amostras.');
+      const cols = Object.keys(s.rows[0]);
+      const csv = [cols.join(','), ...s.rows.map((r) => cols.map((c) => r[c] ?? '').join(','))].join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = `civic2007_${s.startedAt.slice(0, 19).replace(/[:T]/g, '-')}.csv`;
+      a.click();
+    };
+
+    window.deleteSession = (id) => {
+      appState.sessions = appState.sessions.filter((x) => x.id !== id);
+      if (appState.currentSessionId === id) appState.currentSessionId = null;
+      saveSessions();
+      renderSessions();
+    };
+
+    let lastAnalysisText = '';
+    function runAnalysis(sessionsList, title) {
+      const rows = sessionsList.flatMap((s) => s.rows || []);
+      const out = document.getElementById('analysisOutput');
+      if (rows.length < 3) {
+        out.innerHTML = '<div class="text-amber-300">Poucos dados ainda (mínimo 3 amostras).</div>';
+        return;
+      }
+
+      let distKm = 0, liters = 0, totalSec = 0, idleSec = 0;
+      let moveKmlSum = 0, moveKmlN = 0, idleLhSum = 0, idleLhN = 0;
+      let stftSum = 0, stftMin = 999, stftMax = -999;
+      let lamRSum = 0, lamCSum = 0, lamN = 0;
+      let timSum = 0, timMinLoad = 999, rpmMax = 0, spdMax = 0;
+      let voltMin = 99, voltMax = 0, coolStart = rows[0].coolant || 0, coolMax = 0, secTo80 = null;
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const prev = i > 0 ? rows[i - 1] : null;
+        let dt = prev ? (new Date(r.ts) - new Date(prev.ts)) / 1000 : 1;
+        if (dt <= 0 || dt > 15) dt = 1;
+
+        totalSec += dt;
+        distKm += (r.speed || 0) * (dt / 3600);
+        liters += (r.fuelLh || 0) * (dt / 3600);
+
+        if ((r.speed || 0) <= 2 && (r.rpm || 0) > 300) {
+          idleSec += dt;
+          if (r.fuelLh > 0) { idleLhSum += r.fuelLh; idleLhN++; }
+        } else if ((r.speed || 0) > 5 && r.fuelKml > 0) {
+          moveKmlSum += r.fuelKml; moveKmlN++;
+        }
+
+        const st = r.stft ?? 0;
+        stftSum += st;
+        if (st < stftMin) stftMin = st;
+        if (st > stftMax) stftMax = st;
+
+        if (r.lambdaReal > 0 && r.lambdaCmd > 0) {
+          lamRSum += r.lambdaReal; lamCSum += r.lambdaCmd; lamN++;
+        }
+        timSum += (r.timing || 0);
+        if ((r.load || 0) > 50 && (r.timing || 0) < timMinLoad) timMinLoad = r.timing;
+        if ((r.rpm || 0) > rpmMax) rpmMax = r.rpm;
+        if ((r.speed || 0) > spdMax) spdMax = r.speed;
+        if (r.ecuVolt > 0) {
+          if (r.ecuVolt < voltMin) voltMin = r.ecuVolt;
+          if (r.ecuVolt > voltMax) voltMax = r.ecuVolt;
+        }
+        if ((r.coolant || 0) > coolMax) coolMax = r.coolant;
+        if (secTo80 === null && (r.coolant || 0) >= 80) secTo80 = Math.round(totalSec);
+      }
+
+      const avgStft = stftSum / rows.length;
+      const avgLamR = lamN ? lamRSum / lamN : 0;
+      const avgLamC = lamN ? lamCSum / lamN : 0;
+      const avgKml = liters > 0.01 && distKm > 0.1 ? (distKm / liters) : (moveKmlN ? moveKmlSum / moveKmlN : 0);
+      const avgIdleLh = idleLhN ? idleLhSum / idleLhN : 0;
+      const idlePct = totalSec > 0 ? (idleSec * 100) / totalSec : 0;
+
+      const alerts = [];
+      if (Math.abs(avgStft) > 8) alerts.push(`⚠️ STFT médio em ${avgStft.toFixed(1)}% (mistura fora do ideal; verificar bicos/ar falso/combustível).`);
+      if (voltMin < 13.0 && rpmMax > 500) alerts.push(`⚠️ Tensão mínima da ECU caiu para ${voltMin.toFixed(2)}V (checar alternador/bateria).`);
+      if (coolMax > 103) alerts.push(`⚠️ Água atingiu ${coolMax}°C (checar ventoinha/arrefecimento).`);
+      if (!alerts.length) alerts.push('✅ Parâmetros de mistura, tensão e temperatura dentro da normalidade.');
+
+      lastAnalysisText = [
+        `=== ANÁLISE: ${title} (${rows.length} amostras) ===`,
+        `Duração: ${(totalSec / 60).toFixed(1)} min | Distância est.: ${distKm.toFixed(2)} km | Marcha lenta: ${idlePct.toFixed(0)}%`,
+        `Consumo médio: ${avgKml.toFixed(1)} km/L | Lenta: ${avgIdleLh.toFixed(2)} L/h | Gasto est.: ${liters.toFixed(2)} L`,
+        `RPM máx: ${rpmMax} | Vel máx: ${spdMax} km/h | Avanço médio: ${(timSum / rows.length).toFixed(1)}°`,
+        `Mistura: STFT médio=${avgStft.toFixed(1)}% [${stftMin.toFixed(1)}% a ${stftMax.toFixed(1)}%] | Lambda Real=${avgLamR.toFixed(3)} vs Alvo=${avgLamC.toFixed(3)}`,
+        `Térmica & Elétrica: Água ${coolStart}°C -> ${coolMax}°C (80°C em ${secTo80 !== null ? secTo80 + 's' : '--'}) | Tensão ECU ${voltMin.toFixed(2)}V–${voltMax.toFixed(2)}V`,
+        ...alerts
+      ].join('\n');
+
+      out.innerHTML = `
+        <div class="font-bold text-cyan-300">${title} (${rows.length} amostras)</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mono">
+          <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+            <div class="text-slate-400">Trajeto &amp; Consumo</div>
+            <div>Duração: <b>${(totalSec / 60).toFixed(1)} min</b> • Dist: <b>${distKm.toFixed(2)} km</b></div>
+            <div>Média: <b class="text-emerald-300">${avgKml.toFixed(1)} km/L</b> • Lenta: <b>${avgIdleLh.toFixed(2)} L/h</b> (${idlePct.toFixed(0)}%)</div>
+          </div>
+          <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+            <div class="text-slate-400">Queima &amp; Mistura</div>
+            <div>STFT médio: <b class="text-purple-300">${avgStft > 0 ? '+' : ''}${avgStft.toFixed(1)}%</b> [${stftMin.toFixed(0)}..${stftMax.toFixed(0)}%]</div>
+            <div>Lambda Real: <b>${avgLamR.toFixed(3)}</b> vs Alvo: <b>${avgLamC.toFixed(3)}</b></div>
+          </div>
+          <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+            <div class="text-slate-400">Motor &amp; Ignição</div>
+            <div>RPM máx: <b>${rpmMax}</b> • Vel máx: <b>${spdMax} km/h</b></div>
+            <div>Avanço médio: <b>${(timSum / rows.length).toFixed(1)}°</b> ${timMinLoad < 999 ? `• Mín carga: <b>${timMinLoad.toFixed(1)}°</b>` : ''}</div>
+          </div>
+          <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+            <div class="text-slate-400">Térmica &amp; Alternador</div>
+            <div>Água: <b>${coolStart}°C → ${coolMax}°C</b> (80°C: ${secTo80 !== null ? secTo80 + 's' : '--'})</div>
+            <div>Tensão ECU: <b>${voltMin.toFixed(2)}V – ${voltMax.toFixed(2)}V</b></div>
+          </div>
+        </div>
+        <div class="pt-1 text-emerald-300 font-semibold">${alerts.join('<br/>')}</div>
+      `;
+    }
+
+    window.analyzeSession = (id) => {
+      const s = appState.sessions.find((x) => x.id === id);
+      if (s) runAnalysis([s], `Viagem ${s.label}`);
+    };
+
+    function handleChunk(c) {
+      appState.rxBuffer += c;
+      if (appState.rxBuffer.includes('>')) {
+        const clean = appState.rxBuffer.replace(/>/g, '').trim();
+        appState.rxBuffer = '';
+        if (appState.pendingResolve) {
+          const res = appState.pendingResolve;
+          appState.pendingResolve = null;
+          res(clean);
+        }
+      }
+    }
+
+    async function sendObdCommand(cmdRaw, timeoutMs = 4000) {
+      const cmd = cmdRaw.trim().toUpperCase();
+      if (cmd === '04' || cmd.startsWith('04 ')) return 'BLOCKED';
+      return new Promise(async (resolve) => {
+        appState.rxBuffer = '';
+        const t = setTimeout(() => {
+          if (appState.pendingResolve) {
+            appState.pendingResolve = null;
+            resolve('TIMEOUT');
+          }
+        }, timeoutMs);
+        appState.pendingResolve = (r) => { clearTimeout(t); resolve(r); };
+        const bytes = new TextEncoder().encode(cmd + '\r');
+        try {
+          if (appState.mode === 'BLE' && appState.bleWriteChar) {
+            if (appState.bleWriteChar.properties.writeWithoutResponse) await appState.bleWriteChar.writeValueWithoutResponse(bytes);
+            else await appState.bleWriteChar.writeValue(bytes);
+          } else if (appState.mode === 'SERIAL' && appState.serialPort?.writable) {
+            const w = appState.serialPort.writable.getWriter();
+            await w.write(bytes);
+            w.releaseLock();
+          } else {
+            clearTimeout(t);
+            appState.pendingResolve = null;
+            resolve('DISCONNECTED');
+          }
+        } catch (e) {
+          clearTimeout(t);
+          appState.pendingResolve = null;
+          addLog('ERR', e.message);
+          resolve('ERROR');
+        }
+      });
+    }
+
+    function setConnBanner(type, text) {
+      const el = document.getElementById('connBanner');
+      if (!el) return;
+      const styles = {
+        waiting: 'rounded-xl px-3 py-2.5 text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200',
+        connecting: 'rounded-xl px-3 py-2.5 text-xs font-semibold bg-blue-500/15 border border-blue-500/40 text-blue-200',
+        connected: 'rounded-xl px-3 py-2.5 text-xs font-bold bg-emerald-500/20 border border-emerald-500/50 text-emerald-200',
+        error: 'rounded-xl px-3 py-2.5 text-xs font-semibold bg-rose-500/15 border border-rose-500/40 text-rose-200'
+      };
+      el.className = styles[type] || styles.waiting;
+      el.textContent = text;
+    }
+
+    async function openSerialPort(port) {
+      setConnBanner('connecting', '⏳ Abrindo conexão Bluetooth SPP com o scanner...');
+      await port.open({ baudRate: 38400 });
+      appState.serialPort = port;
+      appState.mode = 'SERIAL';
+
+      (async () => {
+        const dec = new TextDecoder();
+        while (port.readable) {
+          const r = port.readable.getReader();
+          try {
+            while (true) {
+              const { value, done } = await r.read();
+              if (done) break;
+              if (value) handleChunk(dec.decode(value));
+            }
+          } catch (e) {
+            addLog('ERR', e.message);
+            setConnBanner('error', '❌ Conexão Bluetooth perdida: ' + e.message);
+            break;
+          } finally { r.releaseLock(); }
+        }
+      })();
+
+      const chip = cleanElmText(await sendObdCommand('ATZ', 3500));
+      document.getElementById('connStatusText').textContent = 'Conectado (OBDII)';
+      document.getElementById('connDot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+      document.getElementById('btnConnectSerial').textContent = '✅ Conectado (Reconectar)';
+      setConnBanner('connected', `✅ OK, você está conectado! (${chip && chip !== 'TIMEOUT' ? chip : 'OBDII SPP'}) • Lendo sensores ao vivo...`);
+      showToast('OK, você está conectado!');
+      await startLiveMonitoring();
+    }
+
+    async function connectSerialSPP() {
+      if (!('serial' in navigator)) {
+        setConnBanner('error', '❌ Use o Google Chrome (Web Serial indisponível neste navegador).');
+        return showToast('Use o Google Chrome.');
+      }
+      try {
+        setConnBanner('connecting', '⏳ Selecione OBDII na janela do Bluetooth...');
+        const port = await navigator.serial.requestPort({ allowedBluetoothServiceClassIds: [SPP_UUID] });
+        await openSerialPort(port);
+      } catch (e) {
+        addLog('ERR', e.message);
+        setConnBanner('error', '❌ Não conectou: ' + e.message);
+      }
+    }
+
+    async function connectBLE() {
+      if (!('bluetooth' in navigator)) return showToast('Web Bluetooth indisponível.');
+      try {
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: KNOWN_OBD_SERVICES });
+        const server = await device.gatt.connect();
+        const services = await server.getPrimaryServices();
+        let wChar = null, nChar = null;
+        for (const s of services) {
+          const chars = await s.getCharacteristics();
+          for (const c of chars) {
+            if ((c.properties.write || c.properties.writeWithoutResponse) && !wChar) wChar = c;
+            if (c.properties.notify && !nChar) nChar = c;
+          }
+        }
+        if (!wChar || !nChar) return showToast('Sem serial BLE. Use Conectar OBDII (SPP).');
+        appState.bleWriteChar = wChar;
+        await nChar.startNotifications();
+        nChar.addEventListener('characteristicvaluechanged', (e) => handleChunk(new TextDecoder().decode(e.target.value)));
+        appState.mode = 'BLE';
+        document.getElementById('connStatusText').textContent = `BLE: ${device.name || 'OBDII'}`;
+        document.getElementById('connDot').className = 'w-2.5 h-2.5 rounded-full bg-blue-400';
+        await startLiveMonitoring();
+      } catch (e) { addLog('ERR', e.message); }
+    }
+
+    async function initElmProtocol() {
+      await sendObdCommand('ATZ', 3500);
+      await sendObdCommand('ATE0', 2500);
+      await sendObdCommand('ATSP7', 2500);
+      let r = await sendObdCommand('0100', 5000);
+      if (!r.includes('41 00')) {
+        await sendObdCommand('ATSP0', 2500);
+        r = await sendObdCommand('0100', 10000);
+      }
+      return r.includes('41 00');
+    }
+
+    function updateOperationMatrix(rpm, load, timing, stft, lambdaReal) {
+      if (!rpm || rpm <= 0) return;
+      const rIdx = rpm < 1000 ? 0 : rpm < 2000 ? 1 : rpm < 3000 ? 2 : rpm < 4000 ? 3 : 4;
+      const cIdx = load < 25 ? 0 : load < 50 ? 1 : load < 75 ? 2 : 3;
+      const key = `${rIdx}-${cIdx}`;
+      const cell = appState.matrix[key] || { n: 0, timing: 0, stft: 0, lam: 0 };
+      cell.n += 1;
+      cell.timing += timing;
+      cell.stft += stft;
+      cell.lam += lambdaReal;
+      appState.matrix[key] = cell;
+      renderMatrix();
+    }
+
+    function renderMatrix() {
+      const rLabels = ['< 1000', '1000–2000', '2000–3000', '3000–4000', '4000+'];
+      document.getElementById('opMatrixBody').innerHTML = rLabels.map((rl, rIdx) => {
+        const cols = [0, 1, 2, 3].map((cIdx) => {
+          const c = appState.matrix[`${rIdx}-${cIdx}`];
+          if (!c) return '<td class="py-1.5 px-2 text-slate-600">--</td>';
+          return `<td class="py-1.5 px-2 text-emerald-300 bg-emerald-500/5">${(c.timing / c.n).toFixed(1)}° | ${(c.stft / c.n).toFixed(1)}% | λ${(c.lam / c.n).toFixed(2)} <span class="text-slate-500">(${c.n})</span></td>`;
+        }).join('');
+        return `<tr><td class="py-1.5 pr-2 font-bold text-slate-300">${rl}</td>${cols}</tr>`;
+      }).join('');
+    }
+
+    function setLiveButtonUi(running) {
+      const btn = document.getElementById('btnToggleLive');
+      if (running) {
+        btn.textContent = '⏸ Pausar Ao Vivo';
+        btn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold';
+      } else {
+        btn.textContent = '▶ Ligar Ao Vivo';
+        btn.className = 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold';
+      }
+    }
+
+    async function startLiveMonitoring() {
+      if (appState.mode === 'DISCONNECTED') return showToast('Conecte ao OBDII primeiro.');
+      if (appState.liveRunning) return;
+      appState.liveRunning = true;
+      setLiveButtonUi(true);
+      await initElmProtocol();
+      if (!appState.currentSessionId) startNewSession('Conexão inicial');
+
+      while (appState.liveRunning) {
+        if (appState.diagBusy) { await new Promise((r) => setTimeout(r, 200)); continue; }
+        appState.cycleCount += 1;
+        const slowTick = appState.cycleCount % 5 === 1;
+
+        const rRpm = extractHexBytes(await sendObdCommand('010C', 2500), ['41', '0C']);
+        const rSpd = extractHexBytes(await sendObdCommand('010D', 2500), ['41', '0D']);
+        const rMaf = extractHexBytes(await sendObdCommand('0110', 2500), ['41', '10']);
+        const rLamR = extractHexBytes(await sendObdCommand('0134', 2500), ['41', '34']);
+        const rLamC = extractHexBytes(await sendObdCommand('0144', 2500), ['41', '44']);
+        const rStft = extractHexBytes(await sendObdCommand('0106', 2500), ['41', '06']);
+        const rTim = extractHexBytes(await sendObdCommand('010E', 2500), ['41', '0E']);
+        const rLoad = extractHexBytes(await sendObdCommand('0104', 2500), ['41', '04']);
+        const rMap = extractHexBytes(await sendObdCommand('010B', 2500), ['41', '0B']);
+        const rTps = extractHexBytes(await sendObdCommand('0111', 2500), ['41', '11']);
+
+        let rCool = null, rIat = null, rVolt = null, rO2 = null, rSys = null, rAbs = null, rPed = null, rBaro = null, rEgr = null, rEvap = null;
+        if (slowTick) {
+          rCool = extractHexBytes(await sendObdCommand('0105', 2500), ['41', '05']);
+          rIat = extractHexBytes(await sendObdCommand('010F', 2500), ['41', '0F']);
+          rVolt = extractHexBytes(await sendObdCommand('0142', 2500), ['41', '42']);
+          rO2 = extractHexBytes(await sendObdCommand('0115', 2500), ['41', '15']);
+          rSys = extractHexBytes(await sendObdCommand('0103', 2500), ['41', '03']);
+          rAbs = extractHexBytes(await sendObdCommand('0143', 2500), ['41', '43']);
+          rPed = extractHexBytes(await sendObdCommand('0149', 2500), ['41', '49']);
+          rBaro = extractHexBytes(await sendObdCommand('0133', 2500), ['41', '33']);
+          rEgr = extractHexBytes(await sendObdCommand('012C', 2500), ['41', '2C']);
+          rEvap = extractHexBytes(await sendObdCommand('012E', 2500), ['41', '2E']);
+        }
+
+        const m = appState.lastMetrics;
+        if (rRpm?.length >= 2) m.rpm = Math.round((256 * rRpm[0] + rRpm[1]) / 4);
+        if (rSpd?.length >= 1) m.speed = rSpd[0];
+        if (rMaf?.length >= 2) {
+          m.maf = +((256 * rMaf[0] + rMaf[1]) / 100).toFixed(2);
+          m.fuelLh = +(m.maf * (3600 / (13.2 * 750))).toFixed(2);
+          m.fuelKml = m.fuelLh > 0 && m.speed > 0 ? +(m.speed / m.fuelLh).toFixed(1) : 0;
+        }
+        if (rLamR?.length >= 2) {
+          m.lambdaReal = +(((256 * rLamR[0] + rLamR[1]) * 2) / 65536).toFixed(3);
+          m.afr = +(m.lambdaReal * 14.7).toFixed(1);
+        }
+        if (rLamC?.length >= 2) {
+          m.lambdaCmd = +(((256 * rLamC[0] + rLamC[1]) * 2) / 65536).toFixed(3);
+        }
+        m.lambdaDiff = +(m.lambdaReal - m.lambdaCmd).toFixed(3);
+        if (rStft?.length >= 1) m.stft = +(((rStft[0] - 128) * 100) / 128).toFixed(1);
+        if (rTim?.length >= 1) m.timing = +((rTim[0] / 2) - 64).toFixed(1);
+        if (rLoad?.length >= 1) m.load = +((rLoad[0] * 100) / 255).toFixed(1);
+        if (rMap?.length >= 1) m.map = rMap[0];
+        if (rTps?.length >= 1) m.tps = +((rTps[0] * 100) / 255).toFixed(1);
+        if (rCool?.length >= 1) m.coolant = rCool[0] - 40;
+        if (rIat?.length >= 1) m.iat = rIat[0] - 40;
+        if (rVolt?.length >= 2) m.ecuVolt = +((256 * rVolt[0] + rVolt[1]) / 1000).toFixed(2);
+        if (rO2?.length >= 1) m.o2v = +(rO2[0] / 200).toFixed(3);
+        if (rSys?.length >= 1) m.fuelSys = rSys[0] === 2 ? 'Closed Loop' : rSys[0] === 1 ? 'Open Loop' : `Status ${rSys[0]}`;
+        if (rAbs?.length >= 2) m.absLoad = +(((256 * rAbs[0] + rAbs[1]) * 100) / 255).toFixed(1);
+        if (rPed?.length >= 1) m.pedal = +((rPed[0] * 100) / 255).toFixed(1);
+        if (rBaro?.length >= 1) m.baro = rBaro[0];
+        if (rEgr?.length >= 1) m.egr = +((rEgr[0] * 100) / 255).toFixed(1);
+        if (rEvap?.length >= 1) m.evap = +((rEvap[0] * 100) / 255).toFixed(1);
+
+        // Detecção automática de nova partida do motor (não divide se houver trajeto manual ativo)
+        const engNow = m.rpm > 300;
+        if (engNow && !appState.wasEngineRunning && !appState.activeManualRouteId) {
+          const cur = getCurrentSession();
+          if (cur && cur.rows.length > 5) startNewSession('Partida do motor');
+        }
+        appState.wasEngineRunning = engNow;
+
+        // Atualiza UI
+        document.getElementById('mRpm').textContent = m.rpm;
+        document.getElementById('mSpeed').textContent = m.speed;
+        document.getElementById('mGpsSpeed').textContent = `GPS: ${appState.gps?.spd ?? '--'} km/h`;
+        document.getElementById('mFuelLh').textContent = m.fuelLh;
+        document.getElementById('mFuelKml').textContent = m.fuelKml > 0 ? `${m.fuelKml} km/L` : '-- km/L';
+        document.getElementById('mLambdaReal').textContent = m.lambdaReal;
+        document.getElementById('mAfr').textContent = `AFR: ${m.afr}:1`;
+        document.getElementById('mLambdaCmd').textContent = m.lambdaCmd;
+        document.getElementById('mLambdaDiff').textContent = `Desvio: ${m.lambdaDiff > 0 ? '+' : ''}${m.lambdaDiff}`;
+        document.getElementById('mStft').textContent = `${m.stft > 0 ? '+' : ''}${m.stft}`;
+        document.getElementById('mFuelSys').textContent = m.fuelSys;
+        document.getElementById('mTiming').textContent = m.timing;
+        document.getElementById('mLoad').textContent = `${m.load}%`;
+        document.getElementById('mAbsLoad').textContent = `Abs: ${m.absLoad}%`;
+        document.getElementById('mMap').textContent = `${m.map} kPa`;
+        document.getElementById('mMaf').textContent = `${m.maf} g/s`;
+        document.getElementById('mTps').textContent = `TPS ${m.tps}%`;
+        document.getElementById('mPedal').textContent = `Pedal ${m.pedal}%`;
+        document.getElementById('mCoolant').textContent = `${m.coolant}°C`;
+        document.getElementById('mIat').textContent = `Ar: ${m.iat}°C`;
+        document.getElementById('mEcuVolt').textContent = `${m.ecuVolt} V`;
+        document.getElementById('mO2').textContent = `B1S2: ${m.o2v} V`;
+
+        const sess = getCurrentSession();
+        if (sess) {
+          sess.endedAt = new Date().toISOString();
+          if (m.rpm > sess.maxRpm) sess.maxRpm = m.rpm;
+          if (m.speed > sess.maxSpeed) sess.maxSpeed = m.speed;
+          if (m.coolant > sess.maxCoolant) sess.maxCoolant = m.coolant;
+          sess.rows.push({
+            ts: sess.endedAt, ...m,
+            lat: appState.gps?.lat ?? '', lon: appState.gps?.lon ?? '', gpsSpeedKmh: appState.gps?.spd ?? ''
+          });
+          document.getElementById('mSamples').textContent = `${sess.rows.length} pts na sessão`;
+          if (sess.rows.length % 5 === 0) { saveSessions(); renderSessions(); }
+        }
+        updateOperationMatrix(m.rpm, m.load, m.timing, m.stft, m.lambdaReal);
+
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    }
+
+    async function runDiagScan() {
+      if (appState.mode === 'DISCONNECTED') return showToast('Conecte ao OBDII primeiro.');
+      const wasLive = appState.liveRunning;
+      appState.liveRunning = false;
+      appState.diagBusy = true;
+      setLiveButtonUi(false);
+      await new Promise((r) => setTimeout(r, 350));
+
+      await initElmProtocol();
+      const b01 = extractHexBytes(await sendObdCommand('0101', 3500), ['41', '01']);
+      if (b01?.length >= 2) {
+        document.getElementById('diagMil').textContent = `${(b01[0] & 0x80) ? 'ACESA' : 'Apagada'} (${b01[0] & 0x7F})`;
+      }
+      const c03 = decodeDtcBytes(await sendObdCommand('03', 3500), '43');
+      const c07 = decodeDtcBytes(await sendObdCommand('07', 3500), '47');
+      const allDtc = [...c03, ...c07];
+      document.getElementById('diagDtcs').textContent = allDtc.length ? allDtc.join(', ') : '0 falhas';
+
+      const b21 = extractHexBytes(await sendObdCommand('0121', 3000), ['41', '21']);
+      const b30 = extractHexBytes(await sendObdCommand('0130', 3000), ['41', '30']);
+      const b31 = extractHexBytes(await sendObdCommand('0131', 3000), ['41', '31']);
+      const distMil = b21?.length >= 2 ? `${256 * b21[0] + b21[1]} km` : '--';
+      const warm = b30?.length >= 1 ? `${b30[0]} ciclos` : '--';
+      const distReset = b31?.length >= 2 ? `${256 * b31[0] + b31[1]} km` : '--';
+      document.getElementById('diagDistReset').textContent = distReset;
+      document.getElementById('diagWarmups').textContent = `${warm} | ${distMil}`;
+
+      appState.diagBusy = false;
+      showToast('Diagnóstico concluído!');
+      if (wasLive) startLiveMonitoring();
+    }
+
+    async function runAllSystemsCheck() {
+      if (appState.mode === 'DISCONNECTED') return showToast('Conecte ao OBDII primeiro.');
+      const wasLive = appState.liveRunning;
+      appState.liveRunning = false;
+      appState.diagBusy = true;
+      setLiveButtonUi(false);
+      const box = document.getElementById('allSystemsOutput');
+      box.classList.remove('hidden');
+      box.innerHTML = '<div class="text-cyan-300 col-span-2">⏳ Analisando todos os sistemas da ECU...</div>';
+      await new Promise((r) => setTimeout(r, 350));
+
+      const ecuReady = await initElmProtocol();
+      const atrv = cleanElmText(await sendObdCommand('ATRV', 2500));
+      if (!ecuReady) {
+        box.innerHTML = `<div class="col-span-2 bg-amber-500/15 border border-amber-500/40 text-amber-200 rounded-lg p-3">⚠️ Scanner conectado (Bateria Pino 16: <b>${atrv}</b>), mas a <b>ECU do Civic está desligada</b>. Gire a chave para a <b>Posição II (painel aceso)</b> ou ligue o motor e tente novamente.</div>`;
+        appState.diagBusy = false;
+        showToast('ECU desligada (gire a chave para Posição II).');
+        if (wasLive) startLiveMonitoring();
+        return;
+      }
+      const q = async (cmd, pfx) => extractHexBytes(await sendObdCommand(cmd, 3000), pfx);
+      const b01 = await q('0101', ['41', '01']);
+      const c03 = decodeDtcBytes(await sendObdCommand('03', 3000), '43');
+      const c07 = decodeDtcBytes(await sendObdCommand('07', 3000), '47');
+      const b03 = await q('0103', ['41', '03']);
+      const b05 = await q('0105', ['41', '05']);
+      const b06 = await q('0106', ['41', '06']);
+      const b0B = await q('010B', ['41', '0B']);
+      const b0E = await q('010E', ['41', '0E']);
+      const b0F = await q('010F', ['41', '0F']);
+      const b10 = await q('0110', ['41', '10']);
+      const b11 = await q('0111', ['41', '11']);
+      const b15 = await q('0115', ['41', '15']);
+      const b2C = await q('012C', ['41', '2C']);
+      const b2E = await q('012E', ['41', '2E']);
+      const b30 = await q('0130', ['41', '30']);
+      const b31 = await q('0131', ['41', '31']);
+      const b33 = await q('0133', ['41', '33']);
+      const b34 = await q('0134', ['41', '34']);
+      const b42 = await q('0142', ['41', '42']);
+      const b44 = await q('0144', ['41', '44']);
+      const b49 = await q('0149', ['41', '49']);
+      const b4C = await q('014C', ['41', '4C']);
+
+      const ecuV = b42?.length >= 2 ? ((256 * b42[0] + b42[1]) / 1000).toFixed(2) : '--';
+      const stft = b06?.length >= 1 ? (((b06[0] - 128) * 100) / 128).toFixed(1) : '--';
+      const lamR = b34?.length >= 2 ? (((256 * b34[0] + b34[1]) * 2) / 65536).toFixed(3) : '--';
+      const lamC = b44?.length >= 2 ? (((256 * b44[0] + b44[1]) * 2) / 65536).toFixed(3) : '--';
+      const cool = b05?.length >= 1 ? (b05[0] - 40) : '--';
+      const iat = b0F?.length >= 1 ? (b0F[0] - 40) : '--';
+      const tim = b0E?.length >= 1 ? ((b0E[0] / 2) - 64).toFixed(1) : '--';
+      const maf = b10?.length >= 2 ? ((256 * b10[0] + b10[1]) / 100).toFixed(2) : '--';
+      const tps = b11?.length >= 1 ? ((b11[0] * 100) / 255).toFixed(1) : '--';
+      const ped = b49?.length >= 1 ? ((b49[0] * 100) / 255).toFixed(1) : '--';
+      const act = b4C?.length >= 1 ? ((b4C[0] * 100) / 255).toFixed(1) : '--';
+      const o2v = b15?.length >= 1 ? (b15[0] / 200).toFixed(3) : '--';
+      const egr = b2C?.length >= 1 ? ((b2C[0] * 100) / 255).toFixed(1) : '--';
+      const evap = b2E?.length >= 1 ? ((b2E[0] * 100) / 255).toFixed(1) : '--';
+      const distR = b31?.length >= 2 ? (256 * b31[0] + b31[1]) : '--';
+      const warm = b30?.length >= 1 ? b30[0] : '--';
+      const dtcs = [...c03, ...c07];
+
+      const systems = [
+        { name: '1. Elétrica & Módulo ECU', ok: ecuV === '--' || parseFloat(ecuV) >= 11.8, info: `Pino 16: ${atrv} • ECU: ${ecuV}V` },
+        { name: '2. Injeção & Falhas (DTC)', ok: dtcs.length === 0, info: dtcs.length ? `Falhas: ${dtcs.join(', ')}` : `0 falhas • MIL ${b01 && (b01[0] & 0x80) ? 'Acesa' : 'Apagada'}` },
+        { name: '3. Mistura & Sonda Wideband', ok: stft === '--' || Math.abs(parseFloat(stft)) <= 10, info: `STFT: ${stft}% • λReal: ${lamR} / λAlvo: ${lamC} (${b03?.[0] === 2 ? 'Closed' : 'Open'})` },
+        { name: '4. Ignição & Admissão Ar', ok: true, info: `Avanço: ${tim}° • MAP: ${b0B?.[0] ?? '--'} kPa • MAF: ${maf} g/s • Baro: ${b33?.[0] ?? '--'} kPa` },
+        { name: '5. Acelerador & Borboleta', ok: true, info: `TPS: ${tps}% • Pedal D: ${ped}% • Atuador: ${act}%` },
+        { name: '6. Emissões (Cat / EGR / EVAP)', ok: true, info: `Sonda Pós-Cat: ${o2v}V • EGR: ${egr}% • Purga EVAP: ${evap}%` },
+        { name: '7. Arrefecimento & Histórico', ok: cool === '--' || cool <= 103, info: `Água: ${cool}°C • Ar: ${iat}°C • Pós-Reset: ${distR} km (${warm} ciclos)` }
+      ];
+
+      box.innerHTML = systems.map((s) => `
+        <div class="bg-slate-900 border ${s.ok ? 'border-emerald-500/30' : 'border-amber-500/50'} rounded-lg p-2.5">
+          <div class="font-bold ${s.ok ? 'text-emerald-300' : 'text-amber-300'}">${s.ok ? '✅' : '⚠️'} ${s.name}</div>
+          <div class="text-slate-300 text-[11px] mt-0.5">${s.info}</div>
+        </div>
+      `).join('');
+
+      appState.diagBusy = false;
+      showToast('Check-up de todos os sistemas concluído!');
+      if (wasLive) startLiveMonitoring();
+    }
+
+    function startGpsAlwaysOn() {
+      if (!('geolocation' in navigator)) {
+        document.getElementById('gpsBadge').textContent = '📍 GPS: N/D';
+        return;
+      }
+      appState.gpsWatchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const spd = pos.coords.speed ? +(pos.coords.speed * 3.6).toFixed(1) : 0;
+          appState.gps = { lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6), spd };
+          document.getElementById('gpsBadge').textContent = `📍 GPS OK (${spd} km/h)`;
+          document.getElementById('gpsBadge').className = 'px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[11px] text-emerald-300';
+        },
+        (err) => {
+          document.getElementById('gpsBadge').textContent = '📍 GPS: Sem sinal/perm.';
+          addLog('ERR', 'GPS: ' + err.message);
+        },
+        { enableHighAccuracy: true, maximumAge: 2000 }
+      );
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      loadSessions();
+      renderMatrix();
+      renderPeriodSummaries();
+      populateCompareSelects();
+      startGpsAlwaysOn();
+
+      document.getElementById('fuelPriceInput').addEventListener('change', (e) => {
+        localStorage.setItem('civic2007_fuel_price', e.target.value);
+        renderPeriodSummaries();
+      });
+
+      document.getElementById('btnToggleRoute').addEventListener('click', () => {
+        const btn = document.getElementById('btnToggleRoute');
+        const badge = document.getElementById('routeStatusBadge');
+        if (!appState.activeManualRouteId) {
+          const tag = document.getElementById('routeNameInput').value.trim() || 'Trajeto';
+          const rtype = document.getElementById('routeTypeSelect').value;
+          const sess = startNewSession('Trajeto manual', tag, rtype);
+          appState.activeManualRouteId = sess.id;
+          btn.textContent = '⏹ Encerrar Trajeto';
+          btn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm';
+          badge.textContent = `Gravando: ${tag}`;
+          badge.className = 'text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          showToast(`Trajeto "${tag}" iniciado!`);
+        } else {
+          appState.activeManualRouteId = null;
+          saveSessions();
+          renderSessions();
+          btn.textContent = '▶ Iniciar Análise de Trajeto';
+          btn.className = 'px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs sm:text-sm';
+          badge.textContent = 'Trajeto encerrado e salvo';
+          badge.className = 'text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+          showToast('Trajeto encerrado e salvo!');
+        }
+      });
+
+      document.getElementById('btnCompareRoutes').addEventListener('click', () => {
+        const idA = document.getElementById('cmpSelectA').value;
+        const idB = document.getElementById('cmpSelectB').value;
+        const sA = appState.sessions.find((x) => x.id === idA);
+        const sB = appState.sessions.find((x) => x.id === idB);
+        const out = document.getElementById('compareOutput');
+        if (!sA || !sB || idA === idB) {
+          out.innerHTML = '<span class="text-amber-300">Escolha duas viagens diferentes para comparar.</span>';
+          return;
+        }
+        const price = parseFloat(document.getElementById('fuelPriceInput').value || '6.10') || 6.10;
+        const a = summarizeSession(sA), b = summarizeSession(sB);
+
+        let gpsCheck = '<span class="text-slate-400">GPS insuficiente para validar origem/destino.</span>';
+        if (a.startGps && a.endGps && b.startGps && b.endGps) {
+          const dStart = haversineMeters(+a.startGps.lat, +a.startGps.lon, +b.startGps.lat, +b.startGps.lon);
+          const dEnd = haversineMeters(+a.endGps.lat, +a.endGps.lon, +b.endGps.lat, +b.endGps.lon);
+          const dInv1 = haversineMeters(+a.startGps.lat, +a.startGps.lon, +b.endGps.lat, +b.endGps.lon);
+          const dInv2 = haversineMeters(+a.endGps.lat, +a.endGps.lon, +b.startGps.lat, +b.startGps.lon);
+          const sameWay = dStart <= 300 && dEnd <= 300;
+          const reverseWay = dInv1 <= 300 && dInv2 <= 300;
+          if (sameWay || reverseWay) {
+            gpsCheck = `<span class="text-emerald-300 font-bold">✅ Critério Válido: mesma origem/destino (${reverseWay ? 'sentido inverso B→A' : 'mesmo sentido'})</span>`;
+          } else {
+            gpsCheck = `<span class="text-amber-300">⚠️ Origem/destino com diferença (${Math.round(dStart)}m / ${Math.round(dEnd)}m)</span>`;
+          }
+        }
+
+        const win = a.liters < b.liters ? (sA.routeTag || sA.label) : (sB.routeTag || sB.label);
+        const diffR = Math.abs(a.liters - b.liters) * price;
+        out.innerHTML = `
+          <div class="mb-2">${gpsCheck}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mono">
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+              <div class="font-bold text-cyan-300">${sA.routeTag || sA.label}</div>
+              <div>Dist: ${a.distKm.toFixed(2)} km • Tempo: ${a.totalMin.toFixed(1)} min</div>
+              <div>Parado (trânsito): ${a.idlePct.toFixed(0)}% • Média: ${a.kml.toFixed(1)} km/L</div>
+              <div class="text-emerald-300">Gasto: ${a.liters.toFixed(2)} L (R$ ${(a.liters * price).toFixed(2)})</div>
+            </div>
+            <div class="bg-slate-900 p-2 rounded-lg border border-slate-800">
+              <div class="font-bold text-purple-300">${sB.routeTag || sB.label}</div>
+              <div>Dist: ${b.distKm.toFixed(2)} km • Tempo: ${b.totalMin.toFixed(1)} min</div>
+              <div>Parado (trânsito): ${b.idlePct.toFixed(0)}% • Média: ${b.kml.toFixed(1)} km/L</div>
+              <div class="text-emerald-300">Gasto: ${b.liters.toFixed(2)} L (R$ ${(b.liters * price).toFixed(2)})</div>
+            </div>
+          </div>
+          <div class="mt-2 font-bold text-emerald-300">🏆 Mais econômico: ${win} (economia de R$ ${diffR.toFixed(2)} nessa viagem)</div>
+        `;
+      });
+
+      document.getElementById('closeToastBtn').addEventListener('click', () => document.getElementById('toastBanner').classList.add('hidden'));
+      document.getElementById('btnConnectSerial').addEventListener('click', connectSerialSPP);
+      document.getElementById('btnConnectBLE').addEventListener('click', connectBLE);
+      document.getElementById('btnDiagScan').addEventListener('click', runDiagScan);
+      document.getElementById('btnAllSystems').addEventListener('click', runAllSystemsCheck);
+      document.getElementById('btnAnalyzeAll').addEventListener('click', () => runAnalysis(appState.sessions, 'Todas as Viagens'));
+      document.getElementById('btnCopyAnalysis').addEventListener('click', () => {
+        if (!lastAnalysisText) return showToast('Gere uma análise primeiro.');
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(lastAnalysisText).then(() => showToast('Análise copiada!'));
+      });
+
+      document.getElementById('btnToggleLive').addEventListener('click', () => {
+        if (appState.liveRunning) {
+          appState.liveRunning = false;
+          setLiveButtonUi(false);
+          saveSessions();
+          renderSessions();
+        } else {
+          startLiveMonitoring();
+        }
+      });
+
+      // Registra Service Worker (PWA offline) e botão de instalação
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      }
+      let deferredInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('btnInstallApp').classList.remove('hidden');
+      });
+      document.getElementById('btnInstallApp').addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        document.getElementById('btnInstallApp').classList.add('hidden');
+      });
+
+      // Tenta reconectar automaticamente em porta SPP já autorizada antes
+      if ('serial' in navigator && navigator.serial.getPorts) {
+        try {
+          const ports = await navigator.serial.getPorts();
+          if (ports.length > 0) {
+            setConnBanner('connecting', '🔄 Conectando automaticamente ao OBDII...');
+            addLog('SYS', 'Porta OBDII já autorizada encontrada. Conectando automaticamente...');
+            await openSerialPort(ports[0]);
+          } else {
+            setConnBanner('waiting', '🟡 Primeiro acesso: toque em "Conectar OBDII (SPP)" e selecione OBDII.');
+          }
+        } catch (e) {
+          addLog('ERR', 'Auto-conexão SPP: ' + e.message);
+          setConnBanner('waiting', '🟡 OBDII fora de alcance ou desligado — toque em "Conectar OBDII (SPP)" quando estiver no carro.');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "engie-obd2-civic2007-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MVP de conexão Bluetooth (BLE + SPP RFCOMM) e diagnóstico OBD-II Engie para Honda Civic 2007 1.8",
+  "scripts": {
+    "start": "node start_engie_tunnel.js",
+    "tunnel": "npx --yes concurrently \"npx --yes serve -l 3000\" \"npx --yes cloudflared tunnel --url http://localhost:3000\""
+  }
+}
