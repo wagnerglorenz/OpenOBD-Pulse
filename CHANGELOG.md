@@ -4,6 +4,20 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.1.0] - 2026-11-13
+### Adicionado
+- **Rotas Automáticas & Reconhecimento de Padrões (Geo-cluster)**:
+  - Início automático da viagem ao detectar motor ligado (`RPM > 300`) e veículo em movimento (`> 5 km/h` por 5s), sem precisar tocar em botões.
+  - Encerramento automático ao desligar o motor ou permanecer parado por mais de 2 minutos.
+  - Cadastro de **Locais Conhecidos** (`openobd_known_places_v1`, raio de 150 m) e agrupamento automático por coordenadas de origem/destino (ex: `Casa ➔ Colégio do Caio`), comparando tempo e consumo com a média histórica daquela rota.
+- **Nova Arquitetura em 5 Abas**:
+  - `🚗 Cockpit`, `⚡ Elétrica`, `⛽ Posto` (aba exclusiva para abastecimento e odômetro), `🗺️ Rotas` e `📊 Custos` (resumo financeiro, veículos e Google Drive).
+  - Acesso rápido à aba `🔬 ECU & Matriz` preservado dentro de `⚡ Elétrica`.
+- **Diagnóstico Elétrico Completo (`⚡ Elétrica`)**:
+  - Leitura contínua de bateria em repouso/Pino 16 (`ATRV`), queda mínima na partida (cranking drop `≥ 9.8V` / `9.0-9.7V` / `< 9.0V`) e saúde do alternador (`13.7V – 14.6V` ideal, alertas `< 13.2V` e `> 14.8V`) com histórico recente e guia de teste sob carga.
+
+---
+
 ## [v1.0.0] - 2026-11-13
 ### Adicionado
 - **Rebranding Oficial para OpenOBD Pulse**: Nova identidade visual com logotipo vetorial (`icon.svg`), nome e manifesto PWA universal (`manifest.webmanifest`).

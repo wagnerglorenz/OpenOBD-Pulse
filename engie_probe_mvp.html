@@ -403,10 +403,83 @@
           Selecione dois trajetos acima para comparar distância, semáforos/paradas, combustível parado e custo total.
         </div>
       </section>
+
+      <!-- Reconhecimento Automático de Rotas & Locais Conhecidos -->
+      <section class="card p-3.5 space-y-3 border-emerald-500/30">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold text-emerald-300">🤖 Rotas Automáticas &amp; Locais Conhecidos (GPS)</div>
+            <div class="text-[11px] text-slate-400">Inicia ao andar (&gt; 5 km/h com motor ligado) e encerra ao desligar ou ficar parado &gt; 2 min. Agrupa pontos em até 150 m.</div>
+          </div>
+          <span id="autoTripStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Aguardando movimento</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          <input id="knownPlaceNameInput" type="text" placeholder="Nome do local atual (ex: Casa, Colégio do Caio)" class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white outline-none focus:border-emerald-400" />
+          <button id="btnSaveCurrentPlace" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">📍 Salvar Local Atual</button>
+        </div>
+        <div id="knownPlacesList" class="flex flex-wrap gap-1.5 text-[11px]"></div>
+        <div id="autoRoutePatternSummary" class="text-[11px] text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+          Nenhuma rota recorrente detectada ainda. Dirija normalmente ou nomeie seus pontos frequentes acima.
+        </div>
+      </section>
     </div>
 
-    <!-- ================= ABA 4: CUSTOS, HISTÓRICO & DRIVE ================= -->
-    <div id="tab-history" class="tab-pane hidden space-y-3">
+    <!-- ================= ABA 2: ELÉTRICA & BATERIA ================= -->
+    <div id="tab-electric" class="tab-pane hidden space-y-3">
+      <section class="card p-3.5 space-y-3 border-amber-400/30">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-bold text-amber-300">⚡ Saúde Elétrica: Bateria, Partida &amp; Alternador</div>
+            <div class="text-[11px] text-slate-400">Monitoramento contínuo via Pino 16 (ATRV) e ECU (PID 0142) sem gravação na central.</div>
+          </div>
+          <button type="button" onclick="document.querySelector('[data-tab=&quot;tab-ecu&quot;]')?.click() || switchTabDirect('tab-ecu')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-semibold text-cyan-300">
+            🔬 Abrir ECU &amp; Matriz
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <!-- Card 1: Bateria em Repouso / Chave Ligada -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="text-[11px] text-slate-400">🔋 Bateria (Repouso / Pino 16)</div>
+            <div id="elBatteryVolt" class="text-2xl font-bold mono text-white">-- V</div>
+            <div id="elBatterySoc" class="text-[11px] text-slate-400">Aguardando leitura...</div>
+          </div>
+
+          <!-- Card 2: Queda na Partida (Cranking) -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-400">🔑 Queda na Partida</span>
+              <button id="btnResetCrankVolt" class="text-[10px] text-cyan-400 hover:underline">Zerar pico</button>
+            </div>
+            <div id="elCrankVolt" class="text-2xl font-bold mono text-white">-- V</div>
+            <div id="elCrankHealth" class="text-[11px] text-slate-400">Gire a chave para medir o arranque</div>
+          </div>
+
+          <!-- Card 3: Alternador (Motor Ligado) -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1">
+            <div class="text-[11px] text-slate-400">⚡ Alternador (Carga)</div>
+            <div id="elAltVolt" class="text-2xl font-bold mono text-white">-- V</div>
+            <div id="elAltHealth" class="text-[11px] text-slate-400">Aguardando motor ligado...</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 text-[11px]">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-200">🧪 Teste Prático de Carga do Alternador</span>
+            <span id="elVoltageSourceTag" class="mono text-[10px] text-slate-400">Fonte: --</span>
+          </div>
+          <p class="text-slate-400">
+            Com o motor em marcha lenta, ligue <b>farol baixo + ar-condicionado</b> por 15 segundos. O alternador saudável deve segurar entre <b>13.8V e 14.5V</b> (alerta abaixo de 13.2V ou acima de 15.0V).
+          </p>
+          <div id="elHistoryStrip" class="mono text-[10px] text-slate-400 overflow-x-auto whitespace-nowrap pt-1 border-t border-slate-800/80">
+            Histórico recente: aguardando amostras de tensão...
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= ABA 3: POSTO & ABASTECIMENTO ================= -->
+    <div id="tab-refuel" class="tab-pane hidden space-y-3">
       <!-- Novo Abastecimento & Odômetro Inteligente -->
       <section id="refuelSection" class="card p-3.5 space-y-3 border-amber-500/40">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -533,7 +606,10 @@
           <div id="refuelsList" class="space-y-2 text-xs"></div>
         </div>
       </section>
+    </div>
 
+    <!-- ================= ABA 5: CUSTOS, HISTÓRICO & DRIVE ================= -->
+    <div id="tab-history" class="tab-pane hidden space-y-3">
       <!-- Gestão do Veículo Ativo & Outros Carros -->
       <section class="card p-3.5 space-y-2.5 border-cyan-500/30">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -599,20 +675,23 @@
     </div>
   </main>
 
-  <!-- Barra de Navegação Fixa no Rodapé (4 Abas) -->
+  <!-- Barra de Navegação Fixa no Rodapé (5 Abas) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800">
-    <div class="max-w-5xl mx-auto grid grid-cols-4 text-center">
-      <button data-tab="tab-cockpit" class="nav-tab-btn py-2.5 text-xs font-bold text-cyan-400 border-t-2 border-cyan-400">
+    <div class="max-w-5xl mx-auto grid grid-cols-5 text-center">
+      <button data-tab="tab-cockpit" class="nav-tab-btn py-2.5 text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400">
         🚗 Cockpit
       </button>
-      <button data-tab="tab-ecu" class="nav-tab-btn py-2.5 text-xs font-semibold text-slate-400 border-t-2 border-transparent">
-        🔬 ECU &amp; Saúde
+      <button data-tab="tab-electric" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+        ⚡ Elétrica
       </button>
-      <button data-tab="tab-map" class="nav-tab-btn py-2.5 text-xs font-semibold text-slate-400 border-t-2 border-transparent">
-        🗺️ Mapa &amp; Rotas
+      <button data-tab="tab-refuel" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+        ⛽ Posto
       </button>
-      <button data-tab="tab-history" class="nav-tab-btn py-2.5 text-xs font-semibold text-slate-400 border-t-2 border-transparent">
-        📊 Custos &amp; Drive
+      <button data-tab="tab-map" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+        🗺️ Rotas
+      </button>
+      <button data-tab="tab-history" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+        📊 Custos
       </button>
     </div>
   </nav>
@@ -623,6 +702,7 @@
     const REFUELS_KEY = 'civic2007_refuels_v1';
     const VEHICLES_KEY = 'openobd_vehicles_v1';
     const ACTIVE_VEH_KEY = 'openobd_active_veh_id';
+    const KNOWN_PLACES_KEY = 'openobd_known_places_v1';
     const KNOWN_OBD_SERVICES = [
       '0000fff0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb',
       '0000ffb0-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb',
@@ -651,6 +731,7 @@
       gpsWatchId: null,
       vehicles: [],
       activeVehicleId: null,
+      knownPlaces: [],
       sessions: [],
       refuels: [],
       odoOffset: null,
@@ -661,6 +742,19 @@
       activeManualRouteId: null,
       wasEngineRunning: false,
       wasMoving: false,
+      autoTrip: {
+        active: false,
+        movingSinceMs: 0,
+        stoppedSinceMs: 0
+      },
+      electricState: {
+        pin16Volt: 0,
+        keyOffVolt: 0,
+        altIdleVolt: 0,
+        altLoadVolt: 0,
+        crankDropVolt: 99,
+        voltageHistory: []
+      },
       matrix: {},
       cycleCount: 0,
       idleRpmWindow: [],
@@ -1642,6 +1736,269 @@
       return appState.sessions.find((s) => s.id === appState.currentSessionId) || null;
     }
 
+    function switchTabDirect(targetId) {
+      document.querySelectorAll('.tab-pane').forEach((p) => p.classList.add('hidden'));
+      document.getElementById(targetId)?.classList.remove('hidden');
+      document.querySelectorAll('.nav-tab-btn').forEach((b) => {
+        b.className = 'nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent';
+      });
+      const activeBtn = document.querySelector(`.nav-tab-btn[data-tab="${targetId}"]`);
+      if (activeBtn) activeBtn.className = 'nav-tab-btn py-2.5 text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400';
+      if (targetId === 'tab-map') renderLeafletRoute();
+    }
+
+    // ================= ELÉTRICA: BATERIA, PARTIDA & ALTERNADOR =================
+    function parseVoltNumber(raw) {
+      const m = String(raw || '').match(/(\d+(?:[.,]\d+)?)/);
+      return m ? parseFloat(m[1].replace(',', '.')) : 0;
+    }
+
+    function updateElectricDiagnostics(volt, rpm, source = 'ECU 0142') {
+      if (!volt || volt < 5 || volt > 18) return;
+      const el = appState.electricState;
+      el.voltageHistory.push(`${new Date().toTimeString().slice(0, 5)}:${volt.toFixed(1)}V`);
+      if (el.voltageHistory.length > 10) el.voltageHistory.shift();
+
+      if (source.includes('ATRV')) el.pin16Volt = volt;
+      if (rpm <= 150) {
+        el.keyOffVolt = volt;
+      } else {
+        if (volt < el.crankDropVolt && rpm < 900) el.crankDropVolt = volt;
+        if (volt < appState.minCrankVolt) appState.minCrankVolt = volt;
+        el.altIdleVolt = volt;
+      }
+
+      const elBat = document.getElementById('elBatteryVolt');
+      const elSoc = document.getElementById('elBatterySoc');
+      const elCrk = document.getElementById('elCrankVolt');
+      const elCrkH = document.getElementById('elCrankHealth');
+      const elAlt = document.getElementById('elAltVolt');
+      const elAltH = document.getElementById('elAltHealth');
+      const elSrc = document.getElementById('elVoltageSourceTag');
+      const elHist = document.getElementById('elHistoryStrip');
+
+      if (elSrc) elSrc.textContent = `Fonte: ${source}`;
+      if (elHist) elHist.textContent = `Histórico recente: ${el.voltageHistory.join(' • ')}`;
+
+      const batRef = el.keyOffVolt || el.pin16Volt || volt;
+      if (elBat && elSoc) {
+        elBat.textContent = `${batRef.toFixed(2)} V`;
+        if (rpm > 300) {
+          elBat.className = 'text-2xl font-bold mono text-cyan-300';
+          elSoc.textContent = `Em uso pelo alternador (${volt.toFixed(2)}V)`;
+          elSoc.className = 'text-[11px] text-cyan-300';
+        } else if (batRef >= 12.6) {
+          elBat.className = 'text-2xl font-bold mono text-emerald-400';
+          elSoc.textContent = '✅ Carga ~100% (Bateria saudável)';
+          elSoc.className = 'text-[11px] text-emerald-300';
+        } else if (batRef >= 12.25) {
+          elBat.className = 'text-2xl font-bold mono text-amber-300';
+          elSoc.textContent = '🟡 Carga parcial (~50-75%)';
+          elSoc.className = 'text-[11px] text-amber-300';
+        } else {
+          elBat.className = 'text-2xl font-bold mono text-rose-400';
+          elSoc.textContent = '🔴 Bateria baixa (<12.25V) — risco na partida';
+          elSoc.className = 'text-[11px] text-rose-300';
+        }
+      }
+
+      const crankV = appState.minCrankVolt < 99 ? appState.minCrankVolt : el.crankDropVolt;
+      if (elCrk && elCrkH && crankV < 99) {
+        elCrk.textContent = `${crankV.toFixed(2)} V`;
+        if (crankV >= 9.8) {
+          elCrk.className = 'text-2xl font-bold mono text-emerald-400';
+          elCrkH.textContent = '✅ Arranque forte (≥ 9.8V)';
+          elCrkH.className = 'text-[11px] text-emerald-300';
+        } else if (crankV >= 9.0) {
+          elCrk.className = 'text-2xl font-bold mono text-amber-300';
+          elCrkH.textContent = '🟡 Bateria cansada (9.0V – 9.7V)';
+          elCrkH.className = 'text-[11px] text-amber-300';
+        } else {
+          elCrk.className = 'text-2xl font-bold mono text-rose-400';
+          elCrkH.textContent = '🔴 Queda crítica (< 9.0V) — avaliar troca';
+          elCrkH.className = 'text-[11px] text-rose-300';
+        }
+      }
+
+      if (elAlt && elAltH && rpm > 300) {
+        elAlt.textContent = `${volt.toFixed(2)} V`;
+        if (volt >= 13.7 && volt <= 14.6) {
+          elAlt.className = 'text-2xl font-bold mono text-emerald-400';
+          elAltH.textContent = '✅ Carregando ideal (13.7V – 14.6V)';
+          elAltH.className = 'text-[11px] text-emerald-300';
+        } else if (volt > 14.8) {
+          elAlt.className = 'text-2xl font-bold mono text-rose-400';
+          elAltH.textContent = '🔴 Sobretensão (> 14.8V) — risco no regulador!';
+          elAltH.className = 'text-[11px] text-rose-300';
+        } else if (volt >= 13.2) {
+          elAlt.className = 'text-2xl font-bold mono text-amber-300';
+          elAltH.textContent = '🟡 Carga moderada (13.2V – 13.6V)';
+          elAltH.className = 'text-[11px] text-amber-300';
+        } else {
+          elAlt.className = 'text-2xl font-bold mono text-rose-400';
+          elAltH.textContent = '🔴 Alternador não carrega (< 13.2V)';
+          elAltH.className = 'text-[11px] text-rose-300';
+        }
+      }
+    }
+
+    // ================= ROTAS AUTOMÁTICAS & LOCAIS CONHECIDOS =================
+    function loadKnownPlaces() {
+      try {
+        appState.knownPlaces = JSON.parse(localStorage.getItem(KNOWN_PLACES_KEY) || '[]');
+      } catch {
+        appState.knownPlaces = [];
+      }
+      renderKnownPlaces();
+    }
+
+    function saveKnownPlaces() {
+      try { localStorage.setItem(KNOWN_PLACES_KEY, JSON.stringify(appState.knownPlaces)); } catch {}
+      renderKnownPlaces();
+    }
+
+    function matchKnownPlace(lat, lon) {
+      if (!lat || !lon) return null;
+      let best = null, bestDist = 150; // raio 150 metros
+      for (const p of appState.knownPlaces) {
+        const d = haversineMeters(+lat, +lon, +p.lat, +p.lon);
+        if (d <= bestDist) { best = p; bestDist = d; }
+      }
+      return best;
+    }
+
+    function renderKnownPlaces() {
+      const box = document.getElementById('knownPlacesList');
+      if (!box) return;
+      if (!appState.knownPlaces.length) {
+        box.innerHTML = '<span class="text-slate-500">Nenhum local salvo ainda. Quando estiver em Casa ou no Colégio, toque em "Salvar Local Atual".</span>';
+      } else {
+        box.innerHTML = appState.knownPlaces.map((p, idx) => `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-200">
+            📍 ${p.name}
+            <button type="button" onclick="removeKnownPlace(${idx})" class="text-rose-300 hover:text-rose-200 font-bold ml-1">×</button>
+          </span>
+        `).join('');
+      }
+      renderAutoRoutePatterns();
+    }
+
+    window.removeKnownPlace = function(idx) {
+      appState.knownPlaces.splice(idx, 1);
+      saveKnownPlaces();
+    };
+
+    function renderAutoRoutePatterns() {
+      const out = document.getElementById('autoRoutePatternSummary');
+      if (!out) return;
+      const tagged = {};
+      for (const s of appState.sessions) {
+        if (!s.routeTag || !s.rows?.length) continue;
+        const sum = summarizeSession(s);
+        if (sum.distKm < 0.2) continue;
+        const g = tagged[s.routeTag] || [];
+        g.push({ sess: s, sum });
+        tagged[s.routeTag] = g;
+      }
+      const entries = Object.entries(tagged).filter(([, list]) => list.length >= 1);
+      if (!entries.length) {
+        out.textContent = 'Nenhuma rota recorrente detectada ainda. Dirija normalmente ou nomeie seus pontos frequentes acima.';
+        return;
+      }
+      out.innerHTML = entries.map(([tag, list]) => {
+        const latest = list[0];
+        const avgLit = list.reduce((a, b) => a + b.sum.liters, 0) / list.length;
+        const avgMin = list.reduce((a, b) => a + b.sum.totalMin, 0) / list.length;
+        const diffMin = latest.sum.totalMin - avgMin;
+        const cmpTxt = list.length > 1
+          ? `Hoje: ${latest.sum.totalMin.toFixed(1)} min (${diffMin >= 0 ? '+' : ''}${diffMin.toFixed(1)} min vs média) • ${latest.sum.liters.toFixed(2)} L (média ${avgLit.toFixed(2)} L)`
+          : `1ª viagem registrada (${latest.sum.distKm.toFixed(1)} km • ${latest.sum.totalMin.toFixed(1)} min)`;
+        return `<div class="py-1 border-b border-slate-800/70 last:border-0"><b class="text-emerald-300">${tag}</b> (${list.length}x) — ${cmpTxt}</div>`;
+      }).join('');
+    }
+
+    function finalizeAndTagTrip(sess) {
+      if (!sess || !sess.rows?.length) return;
+      const firstGps = sess.rows.find((r) => r.lat && r.lon);
+      const rev = [...sess.rows].reverse();
+      const lastGps = rev.find((r) => r.lat && r.lon);
+      if (firstGps && lastGps && !sess.routeTag) {
+        const pA = matchKnownPlace(firstGps.lat, firstGps.lon);
+        const pB = matchKnownPlace(lastGps.lat, lastGps.lon);
+        if (pA && pB && pA.id !== pB.id) {
+          sess.routeTag = `${pA.name} ➔ ${pB.name}`;
+        } else if (pA || pB) {
+          sess.routeTag = pA ? `Saída: ${pA.name}` : `Chegada: ${pB.name}`;
+        } else {
+          // Agrupamento automático por coordenada aproximada (geo-cluster ~150m)
+          for (const prev of appState.sessions) {
+            if (prev.id === sess.id || !prev.rows?.length) continue;
+            const pf = prev.rows.find((r) => r.lat && r.lon);
+            const pl = [...prev.rows].reverse().find((r) => r.lat && r.lon);
+            if (pf && pl &&
+              haversineMeters(+firstGps.lat, +firstGps.lon, +pf.lat, +pf.lon) <= 150 &&
+              haversineMeters(+lastGps.lat, +lastGps.lon, +pl.lat, +pl.lon) <= 150) {
+              sess.routeTag = prev.routeTag || `Rota Frequente (${new Date(prev.startedAt).toLocaleDateString('pt-BR')})`;
+              break;
+            }
+          }
+        }
+      }
+      saveSessions();
+      renderKnownPlaces();
+      if (sess.routeTag) showToast(`🏁 Rota concluída: ${sess.routeTag}`);
+    }
+
+    function handleAutoTripTick(engNow, speedKmh) {
+      if (appState.activeManualRouteId) return;
+      const now = Date.now();
+      const badge = document.getElementById('autoTripStatusBadge');
+      const at = appState.autoTrip;
+
+      if (engNow && speedKmh > 5) {
+        at.stoppedSinceMs = 0;
+        if (!at.active) {
+          if (!at.movingSinceMs) at.movingSinceMs = now;
+          if (now - at.movingSinceMs >= 5000) {
+            at.active = true;
+            const cur = getCurrentSession();
+            if (!cur || cur.rows.length > 5) startNewSession('Rota automática (movimento)');
+            if (badge) {
+              badge.textContent = '🟢 Rota automática gravando';
+              badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            }
+          }
+        }
+      } else if (at.active) {
+        if (!engNow) {
+          at.active = false;
+          at.movingSinceMs = 0;
+          at.stoppedSinceMs = 0;
+          finalizeAndTagTrip(getCurrentSession());
+          if (badge) {
+            badge.textContent = 'Motor desligado — rota salva';
+            badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+          }
+        } else if (speedKmh <= 2) {
+          if (!at.stoppedSinceMs) at.stoppedSinceMs = now;
+          if (now - at.stoppedSinceMs >= 120000) {
+            at.active = false;
+            at.movingSinceMs = 0;
+            at.stoppedSinceMs = 0;
+            finalizeAndTagTrip(getCurrentSession());
+            if (badge) {
+              badge.textContent = 'Parado > 2 min — rota salva';
+              badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+            }
+          }
+        } else {
+          at.stoppedSinceMs = 0;
+        }
+      } else {
+        at.movingSinceMs = 0;
+      }
+    }
+
     function renderPeriodSummaries() {
       const box = document.getElementById('periodSummaryGrid');
       if (!box) return;
@@ -2138,6 +2495,9 @@
           const atrv = cleanElmText(await sendObdCommand('ATRV', 2000));
           setConnBanner('waiting', `🟡 Estado 2/4: Scanner conectado (Bateria: ${atrv}) • Carro desligado (aguardando girar a chave...)`);
           document.getElementById('mBatteryHealth').textContent = `Pino 16: ${atrv}`;
+          const atrvNum = parseVoltNumber(atrv);
+          if (atrvNum > 5) updateElectricDiagnostics(atrvNum, 0, 'Pino 16 (ATRV)');
+          handleAutoTripTick(false, 0);
           await new Promise((r) => setTimeout(r, 2500));
           await sendObdCommand('ATSP7', 1500);
           continue;
@@ -2199,6 +2559,7 @@
           if (rVolt?.length >= 2) {
             m.ecuVolt = +((256 * rVolt[0] + rVolt[1]) / 1000).toFixed(2);
             if (m.ecuVolt > 5 && m.ecuVolt < appState.minCrankVolt) appState.minCrankVolt = m.ecuVolt;
+            updateElectricDiagnostics(m.ecuVolt, m.rpm, 'ECU (0142)');
           }
           if (rO2?.length >= 1) m.o2v = +(rO2[0] / 200).toFixed(3);
           if (rSys?.length >= 1) m.fuelSys = rSys[0] === 2 ? 'Closed Loop' : rSys[0] === 1 ? 'Open Loop' : `Status ${rSys[0]}`;
@@ -2230,6 +2591,7 @@
           if (!appState.currentSessionId) startNewSession('Partida do motor');
         }
         appState.wasEngineRunning = engNow;
+        handleAutoTripTick(engNow, m.speed || (appState.gps?.spd || 0));
 
         // Monitor de estabilidade da marcha lenta
         if (engNow && m.speed === 0 && m.coolant >= 75) {
@@ -2418,21 +2780,41 @@
 
     window.addEventListener('DOMContentLoaded', async () => {
       loadSessions();
+      loadKnownPlaces();
       renderMatrix();
       startGpsAlwaysOn();
 
-      // Navegação pelas 4 Abas do Rodapé
+      // Navegação pelas 5 Abas do Rodapé
       document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          const target = btn.getAttribute('data-tab');
-          document.querySelectorAll('.tab-pane').forEach((p) => p.classList.add('hidden'));
-          document.getElementById(target).classList.remove('hidden');
-          document.querySelectorAll('.nav-tab-btn').forEach((b) => {
-            b.className = 'nav-tab-btn py-2.5 text-xs font-semibold text-slate-400 border-t-2 border-transparent';
-          });
-          btn.className = 'nav-tab-btn py-2.5 text-xs font-bold text-cyan-400 border-t-2 border-cyan-400';
-          if (target === 'tab-map') renderLeafletRoute();
+          switchTabDirect(btn.getAttribute('data-tab'));
         });
+      });
+
+      document.getElementById('btnSaveCurrentPlace')?.addEventListener('click', () => {
+        const nameInput = document.getElementById('knownPlaceNameInput');
+        const name = (nameInput?.value || '').trim();
+        if (!name) return showToast('Digite um nome para o local (ex: Casa, Colégio).');
+        if (!appState.gps?.lat || !appState.gps?.lon) return showToast('Aguardando sinal de GPS para salvar a coordenada.');
+        appState.knownPlaces.push({
+          id: 'plc_' + Date.now(),
+          name,
+          lat: +appState.gps.lat,
+          lon: +appState.gps.lon
+        });
+        saveKnownPlaces();
+        if (nameInput) nameInput.value = '';
+        showToast(`Local "${name}" salvo (raio de 150m)!`);
+      });
+
+      document.getElementById('btnResetCrankVolt')?.addEventListener('click', () => {
+        appState.minCrankVolt = 99;
+        appState.electricState.crankDropVolt = 99;
+        const elCrk = document.getElementById('elCrankVolt');
+        const elCrkH = document.getElementById('elCrankHealth');
+        if (elCrk) { elCrk.textContent = '-- V'; elCrk.className = 'text-2xl font-bold mono text-white'; }
+        if (elCrkH) { elCrkH.textContent = 'Pico zerado — dê a partida para medir'; elCrkH.className = 'text-[11px] text-slate-400'; }
+        showToast('Pico de partida zerado.');
       });
 
       document.getElementById('mapSessionSelect').addEventListener('change', renderLeafletRoute);
@@ -2449,7 +2831,7 @@
 
       // Eventos de Abastecimento & Odômetro Inteligente
       document.getElementById('btnQuickRefuel').addEventListener('click', () => {
-        document.querySelector('[data-tab="tab-history"]').click();
+        document.querySelector('[data-tab="tab-refuel"]').click();
         setTimeout(() => {
           document.getElementById('refuelSection')?.scrollIntoView({ behavior: 'smooth' });
           readOdometerForRefuel();
@@ -2558,10 +2940,11 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.0.0',
+          version: '1.1.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,
+          knownPlaces: appState.knownPlaces,
           odoOffset: appState.odoOffset,
           lastKnownOdoKm: appState.lastKnownOdoKm,
           fuelCalibFactor: appState.fuelCalibFactor,
