@@ -1,0 +1,10 @@
+# Diagramas de arquitetura (Archify) - mantidos estritamente locais
+diagrams/
+*.diagram.html
+*.archify.html
+
+# Logs e dependências locais
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

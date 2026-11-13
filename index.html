@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Civic 2007 OBD-II v3.0 — R18A1 Manual • Telemetria &amp; Rotas</title>
+  <title>OpenOBD Pulse — Telemetria &amp; Diagnóstico Automotivo</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <meta name="theme-color" content="#0b0f17" />
@@ -23,14 +23,20 @@
   <!-- Topo Fixo -->
   <header class="bg-slate-900/95 sticky top-0 z-40 backdrop-blur border-b border-slate-800 px-3 py-2.5">
     <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="font-bold text-sm sm:text-base text-white">Civic 2007 1.8 Manual</h1>
-          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v3.2 • R18A1</span>
+      <div class="flex items-center gap-2.5">
+        <img src="./icon.svg" class="w-8 h-8 rounded-lg" alt="Logo" />
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-black text-sm sm:text-base text-white tracking-wide">OPEN<span class="text-cyan-400">OBD</span> <span class="text-emerald-400">PULSE</span></h1>
+            <span id="vehicleBadgeHeader" class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Carregando...</span>
+          </div>
+          <p id="headerSubStatus" class="text-[11px] text-slate-400">Telemetria &amp; Diagnóstico Universal</p>
         </div>
-        <p id="headerSubStatus" class="text-[11px] text-slate-400">Gasolina RS • Detector de Mistura &amp; Postos</p>
       </div>
       <div class="flex items-center gap-1.5">
+        <button id="btnSwitchVehicleHeader" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] text-cyan-300 font-semibold flex items-center gap-1">
+          🚗 <span id="headerCurrentCarName">Meu Carro</span> ▾
+        </button>
         <button id="btnInstallApp" class="hidden px-2.5 py-1 rounded-full bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">📲 Instalar</button>
         <span id="gpsBadge" class="px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] text-slate-300">📍 GPS...</span>
         <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-[11px] font-medium">
@@ -44,6 +50,127 @@
   <div id="toastBanner" class="hidden fixed bottom-20 right-4 left-4 sm:left-auto sm:w-96 z-50 bg-slate-800 border border-cyan-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
     <span id="toastMessage" class="text-xs sm:text-sm font-medium">Pronto.</span>
     <button id="closeToastBtn" class="text-xs font-bold px-2 py-1 bg-slate-700 rounded">OK</button>
+  </div>
+
+  <!-- Modal / Wizard de Boas-Vindas & Cadastro de Veículo -->
+  <div id="vehicleModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="card max-w-lg w-full p-4 sm:p-5 space-y-4 border-cyan-500/50 my-auto shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <img src="./icon.svg" class="w-8 h-8 rounded-lg" alt="Logo" />
+          <div>
+            <h2 id="modalVehicleTitle" class="text-base font-black text-white">Bem-vindo ao OpenOBD Pulse</h2>
+            <p class="text-[10px] text-emerald-400 font-semibold">Plataforma Freemium • 100% Privada e Segura</p>
+          </div>
+        </div>
+        <button id="btnCloseVehicleModal" class="hidden text-slate-400 hover:text-white text-lg font-bold px-2 py-1">✕</button>
+      </div>
+
+      <!-- Aviso Explicativo de Privacidade & Freemium (Mandatório no 1º Uso) -->
+      <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 text-[11px] text-slate-300 space-y-1.5">
+        <div class="font-bold text-emerald-300 flex items-center gap-1.5">
+          <span>🔒 Seus Dados Ficam Apenas no Seu Celular</span>
+        </div>
+        <p>
+          O <b>OpenOBD Pulse</b> é um projeto de uso gratuito. <b>Nenhum dado é enviado para servidores externos ou terceiros</b>.
+        </p>
+        <p class="text-slate-400">
+          • <b>Armazenamento Local Contínuo:</b> Todas as suas viagens e abastecimentos são salvos no banco interno do seu aparelho (IndexedDB: <code class="text-cyan-300">obd_trips_db</code>), sem limite e sem sobrescrever.<br/>
+          • <b>Backup Pessoal Opcional:</b> Você pode conectar o seu próprio Google Drive pessoal quando quiser.<br/>
+          • <b>Compromisso com sua Privacidade:</b> Caso no futuro exista algum recurso voluntário de calibração coletiva de motores, apenas métricas de consumo e injeção poderão ser compartilhadas sob seu consentimento explícito. <b>Dados de GPS, trajetos, mapas e onde você esteve NUNCA serão enviados.</b>
+        </p>
+      </div>
+
+      <!-- Seletor de Veículos Existentes (quando já houver cadastros) -->
+      <div id="existingVehiclesBox" class="hidden space-y-2">
+        <label class="text-[10px] text-cyan-300 uppercase font-bold block">Seus Carros Cadastrados</label>
+        <div id="vehiclesListContainer" class="space-y-1.5 text-xs"></div>
+        <div class="pt-1 flex items-center justify-between">
+          <span class="text-[11px] text-slate-400">Quer adicionar outro carro?</span>
+          <button id="btnAddNewVehicleForm" type="button" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold">+ Novo Carro</button>
+        </div>
+      </div>
+
+      <!-- Formulário de Veículo -->
+      <form id="vehicleForm" class="space-y-3 text-xs">
+        <input type="hidden" id="vehEditId" value="" />
+
+        <div>
+          <label for="vehNickname" class="text-[10px] text-slate-300 uppercase font-bold block">Apelido do Carro</label>
+          <input id="vehNickname" type="text" required placeholder="Ex: Meu Civic, Gol do Trabalho, Onix Turbo..." class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-semibold outline-none focus:border-cyan-400" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="vehBrand" class="text-[10px] text-slate-300 uppercase font-bold block">Marca</label>
+            <input id="vehBrand" list="brandsList" required placeholder="Ex: Honda, VW..." class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400" />
+            <datalist id="brandsList">
+              <option value="Honda" />
+              <option value="Volkswagen" />
+              <option value="Chevrolet" />
+              <option value="Fiat" />
+              <option value="Toyota" />
+              <option value="Ford" />
+              <option value="Renault" />
+              <option value="Hyundai" />
+              <option value="Nissan" />
+              <option value="Jeep" />
+              <option value="Peugeot" />
+              <option value="Citroën" />
+            </datalist>
+          </div>
+          <div>
+            <label for="vehModel" class="text-[10px] text-slate-300 uppercase font-bold block">Modelo &amp; Ano</label>
+            <input id="vehModel" type="text" required placeholder="Ex: Civic 2007, Gol 1.6..." class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="vehDisplacement" class="text-[10px] text-cyan-300 uppercase font-bold block">Motor / Cilindrada (L)</label>
+            <select id="vehDisplacement" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400">
+              <option value="1.0">1.0 (1.000 cc)</option>
+              <option value="1.3">1.3 / 1.4</option>
+              <option value="1.6">1.6 (1.598 cc)</option>
+              <option value="1.8" selected>1.8 (1.799 cc)</option>
+              <option value="2.0">2.0 (1.998 cc)</option>
+              <option value="2.4">2.4 / 2.5</option>
+              <option value="3.0">3.0 V6+</option>
+            </select>
+          </div>
+          <div>
+            <label for="vehTransmission" class="text-[10px] text-emerald-300 uppercase font-bold block">Tipo de Câmbio</label>
+            <select id="vehTransmission" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400">
+              <option value="MANUAL_5" selected>Manual (5 Marchas)</option>
+              <option value="MANUAL_6">Manual (6 Marchas)</option>
+              <option value="AUTO_5">Automático (4/5 marchas)</option>
+              <option value="AUTO_6">Automático (6 marchas+)</option>
+              <option value="CVT">Automático CVT</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="vehFuelType" class="text-[10px] text-amber-300 uppercase font-bold block">Combustível no Tanque</label>
+          <select id="vehFuelType" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400">
+            <option value="E32">Gasolina Comum RS (E32 - 32% Etanol)</option>
+            <option value="E30">Gasolina Comum RS (E30 - 30% Etanol)</option>
+            <option value="E27">Gasolina Comum Brasil Padrão (E27)</option>
+            <option value="E25">Gasolina Premium / Podium (E25)</option>
+            <option value="E100">Etanol Hidratado (E100 - Flex)</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between gap-2">
+          <button type="button" id="btnCancelVehicleEdit" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
+          <div class="flex-1 text-right">
+            <button type="submit" id="btnSaveVehicleSubmit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
+              💾 Salvar Veículo e Começar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
 
   <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4 space-y-4">
@@ -407,6 +534,24 @@
         </div>
       </section>
 
+      <!-- Gestão do Veículo Ativo & Outros Carros -->
+      <section class="card p-3.5 space-y-2.5 border-cyan-500/30">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-xs font-bold text-cyan-300">🚗 Veículo Conectado ao App</h3>
+            <p id="vehCurrentSummaryText" class="text-[11px] text-slate-300 mt-0.5">Carregando dados do veículo...</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnOpenVehiclesManager" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+              ⚙️ Trocar / Editar Veículo
+            </button>
+            <button id="btnResetVehicles" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 text-[11px] font-semibold">
+              🔄 Resetar
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="card p-3.5 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -476,6 +621,8 @@
     const SPP_UUID = '00001101-0000-1000-8000-00805f9b34fb';
     const STORAGE_KEY = 'civic2007_obd_sessions_v2';
     const REFUELS_KEY = 'civic2007_refuels_v1';
+    const VEHICLES_KEY = 'openobd_vehicles_v1';
+    const ACTIVE_VEH_KEY = 'openobd_active_veh_id';
     const KNOWN_OBD_SERVICES = [
       '0000fff0-0000-1000-8000-00805f9b34fb', '0000ffe0-0000-1000-8000-00805f9b34fb',
       '0000ffb0-0000-1000-8000-00805f9b34fb', '000018f0-0000-1000-8000-00805f9b34fb',
@@ -486,7 +633,9 @@
     const FUEL_BLENDS = {
       E32: { afr: 12.88, density: 754, label: 'Gasolina RS E32' },
       E30: { afr: 12.99, density: 753, label: 'Gasolina RS E30' },
-      E25: { afr: 13.28, density: 750, label: 'Gasolina Premium E25' }
+      E27: { afr: 13.15, density: 751, label: 'Gasolina Padrão BR E27' },
+      E25: { afr: 13.28, density: 750, label: 'Gasolina Premium E25' },
+      E100: { afr: 9.00, density: 791, label: 'Etanol Hidratado E100' }
     };
 
     const appState = {
@@ -500,6 +649,8 @@
       wakeLock: null,
       gps: null,
       gpsWatchId: null,
+      vehicles: [],
+      activeVehicleId: null,
       sessions: [],
       refuels: [],
       odoOffset: null,
@@ -590,25 +741,30 @@
       return codes;
     }
 
-    // Cálculo da marcha do Civic 2007 1.8 Manual (R18A1: 3.143, 1.870, 1.235, 0.949, 0.727 x 4.294)
+    // Cálculo da marcha baseado na transmissão cadastrada para o veículo ativo
     function estimateManualGear(rpm, speed) {
       if (speed <= 2 || rpm < 400) return 'N';
+      const veh = getActiveVehicle();
+      const trans = veh?.transmission || 'MANUAL_5';
+      if (trans.startsWith('AUTO') || trans === 'CVT') return 'D';
+
       const ratio = (speed / rpm) * 1000; // km/h por 1000 RPM
-      if (ratio >= 6.0 && ratio < 11.5) return '1ª';
+      if (ratio >= 5.5 && ratio < 11.5) return '1ª';
       if (ratio >= 11.5 && ratio < 18.2) return '2ª';
       if (ratio >= 18.2 && ratio < 25.4) return '3ª';
       if (ratio >= 25.4 && ratio < 33.0) return '4ª';
-      if (ratio >= 33.0 && ratio <= 46.0) return '5ª';
+      if (ratio >= 33.0 && ratio < (trans === 'MANUAL_6' ? 41.0 : 49.0)) return '5ª';
+      if (trans === 'MANUAL_6' && ratio >= 41.0 && ratio <= 55.0) return '6ª';
       return 'N';
     }
 
-    // Eficiência Volumétrica (VE%) para o motor R18A1 (1.799 L)
+    // Eficiência Volumétrica (VE%) dinâmica conforme o motor/cilindrada cadastrado
     function calcVolumetricEfficiency(rpm, mapKpa, iatC, mafGs) {
       if (rpm < 400 || mapKpa <= 0 || mafGs <= 0) return 0;
-      const dispL = 1.799;
+      const veh = getActiveVehicle();
+      const dispL = parseFloat(veh?.displacement || '1.8') || 1.8;
       const tempK = (iatC || 25) + 273.15;
-      const imap = (rpm * mapKpa) / tempK / 2;
-      const theoMaf = (imap / 60) * (dispL / 28.97) * 8.314 ? ((rpm * mapKpa * dispL * 28.97) / (120 * 8.3144 * tempK)) : 0;
+      const theoMaf = ((rpm * mapKpa * dispL * 28.97) / (120 * 8.3144 * tempK));
       if (theoMaf <= 0) return 0;
       return Math.min(130, Math.round((mafGs / theoMaf) * 100));
     }
@@ -658,11 +814,214 @@
       };
     }
 
-    function loadSessions() {
+    // ===== Armazenamento contínuo no celular (IndexedDB): 1 registro por viagem, nunca sobrescreve outra =====
+    const IDB_NAME = 'obd_trips_db';
+    let _idbPromise = null;
+    function idbOpen() {
+      if (_idbPromise) return _idbPromise;
+      _idbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('trips')) db.createObjectStore('trips', { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return _idbPromise;
+    }
+    async function idbPutTrip(sess) {
       try {
+        const db = await idbOpen();
+        await new Promise((res, rej) => {
+          const tx = db.transaction('trips', 'readwrite');
+          tx.objectStore('trips').put(sess);
+          tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        });
+      } catch (e) { addLog('ERR', 'IndexedDB: ' + e.message); }
+    }
+    async function idbDeleteTrip(id) {
+      try {
+        const db = await idbOpen();
+        db.transaction('trips', 'readwrite').objectStore('trips').delete(id);
+      } catch {}
+    }
+    async function idbGetAllTrips() {
+      const db = await idbOpen();
+      return new Promise((res, rej) => {
+        const req = db.transaction('trips', 'readonly').objectStore('trips').getAll();
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+      });
+    }
+
+    // ===== GESTÃO DE VEÍCULOS (MULTI-CARROS & SETUP WIZARD) =====
+    function getActiveVehicle() {
+      if (!appState.vehicles || !appState.vehicles.length) return null;
+      return appState.vehicles.find((v) => v.id === appState.activeVehicleId) || appState.vehicles[0];
+    }
+
+    function loadVehicles() {
+      try {
+        const raw = localStorage.getItem(VEHICLES_KEY);
+        appState.vehicles = raw ? JSON.parse(raw) : [];
+      } catch { appState.vehicles = []; }
+
+      // Se for a primeira vez e já existia a calibração do Civic, migra automaticamente
+      if (!appState.vehicles.length) {
+        const legacyCar = {
+          id: 'veh_civic_r18',
+          nickname: 'Meu Civic 1.8 MT',
+          brand: 'Honda',
+          model: 'Civic 2007 (R18A1)',
+          displacement: '1.8',
+          transmission: 'MANUAL_5',
+          fuelType: 'E32',
+          createdAt: new Date().toISOString()
+        };
+        appState.vehicles = [legacyCar];
+        localStorage.setItem(VEHICLES_KEY, JSON.stringify(appState.vehicles));
+      }
+
+      const activeId = localStorage.getItem(ACTIVE_VEH_KEY);
+      appState.activeVehicleId = (activeId && appState.vehicles.some((v) => v.id === activeId))
+        ? activeId
+        : appState.vehicles[0].id;
+
+      renderActiveVehicleUi();
+    }
+
+    function saveVehicles() {
+      try {
+        localStorage.setItem(VEHICLES_KEY, JSON.stringify(appState.vehicles));
+        localStorage.setItem(ACTIVE_VEH_KEY, appState.activeVehicleId);
+      } catch {}
+      renderActiveVehicleUi();
+    }
+
+    function renderActiveVehicleUi() {
+      const veh = getActiveVehicle();
+      if (!veh) return;
+      const nickEl = document.getElementById('headerCurrentCarName');
+      const badgeEl = document.getElementById('vehicleBadgeHeader');
+      const summaryEl = document.getElementById('vehCurrentSummaryText');
+      if (nickEl) nickEl.textContent = veh.nickname;
+      if (badgeEl) badgeEl.textContent = `${veh.brand} • ${veh.displacement}L`;
+      if (summaryEl) {
+        summaryEl.innerHTML = `<b>${veh.nickname}</b> — ${veh.brand} ${veh.model} (${veh.displacement}L • ${veh.transmission === 'MANUAL_6' ? 'Manual 6m' : veh.transmission === 'MANUAL_5' ? 'Manual 5m' : 'Automático'} • ${veh.fuelType})`;
+      }
+      const blendSel = document.getElementById('fuelBlendSelect');
+      if (blendSel && veh.fuelType && FUEL_BLENDS[veh.fuelType]) {
+        blendSel.value = veh.fuelType;
+      }
+    }
+
+    function openVehicleModal(forceFirstUse = false) {
+      const modal = document.getElementById('vehicleModal');
+      const closeBtn = document.getElementById('btnCloseVehicleModal');
+      const existingBox = document.getElementById('existingVehiclesBox');
+      const cancelEditBtn = document.getElementById('btnCancelVehicleEdit');
+      const form = document.getElementById('vehicleForm');
+
+      if (forceFirstUse || !appState.vehicles.length) {
+        closeBtn.classList.add('hidden');
+        existingBox.classList.add('hidden');
+        cancelEditBtn.classList.add('hidden');
+        document.getElementById('modalVehicleTitle').textContent = 'Bem-vindo ao OpenOBD Pulse';
+        form.reset();
+        document.getElementById('vehEditId').value = '';
+      } else {
+        closeBtn.classList.remove('hidden');
+        existingBox.classList.remove('hidden');
+        renderVehiclesListContainer();
+        populateVehicleForm(getActiveVehicle());
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeVehicleModal() {
+      document.getElementById('vehicleModal').classList.add('hidden');
+    }
+
+    function renderVehiclesListContainer() {
+      const box = document.getElementById('vehiclesListContainer');
+      if (!box) return;
+      box.innerHTML = appState.vehicles.map((v) => {
+        const isAct = v.id === appState.activeVehicleId;
+        return `
+          <div class="bg-slate-900 border ${isAct ? 'border-cyan-400 bg-cyan-950/20' : 'border-slate-800'} rounded-xl p-2.5 flex items-center justify-between gap-2">
+            <div>
+              <div class="font-bold text-white flex items-center gap-1.5">
+                <span>🚗 ${v.nickname}</span>
+                ${isAct ? '<span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold">ATIVO</span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                ${v.brand} ${v.model} • ${v.displacement}L • ${v.transmission} • ${v.fuelType}
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              ${!isAct ? `<button type="button" onclick="switchToVehicle('${v.id}')" class="px-2 py-1 rounded bg-cyan-600/30 text-cyan-300 text-[11px] font-bold">Ativar</button>` : ''}
+              <button type="button" onclick="editVehicleInForm('${v.id}')" class="px-2 py-1 rounded bg-slate-800 text-slate-300 text-[11px]">✏️</button>
+              ${appState.vehicles.length > 1 ? `<button type="button" onclick="deleteVehicleRecord('${v.id}')" class="px-2 py-1 rounded bg-rose-900/30 text-rose-300 text-[11px]">🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.switchToVehicle = (id) => {
+      appState.activeVehicleId = id;
+      saveVehicles();
+      renderVehiclesListContainer();
+      showToast('Veículo ativo alterado!');
+    };
+
+    window.editVehicleInForm = (id) => {
+      const v = appState.vehicles.find((x) => x.id === id);
+      if (v) populateVehicleForm(v);
+    };
+
+    window.deleteVehicleRecord = (id) => {
+      if (appState.vehicles.length <= 1) return showToast('Você precisa manter pelo menos 1 veículo cadastrado.');
+      appState.vehicles = appState.vehicles.filter((x) => x.id !== id);
+      if (appState.activeVehicleId === id) appState.activeVehicleId = appState.vehicles[0].id;
+      saveVehicles();
+      renderVehiclesListContainer();
+      showToast('Veículo removido.');
+    };
+
+    function populateVehicleForm(v) {
+      if (!v) return;
+      document.getElementById('vehEditId').value = v.id || '';
+      document.getElementById('vehNickname').value = v.nickname || '';
+      document.getElementById('vehBrand').value = v.brand || '';
+      document.getElementById('vehModel').value = v.model || '';
+      document.getElementById('vehDisplacement').value = v.displacement || '1.8';
+      document.getElementById('vehTransmission').value = v.transmission || 'MANUAL_5';
+      document.getElementById('vehFuelType').value = v.fuelType || 'E32';
+      document.getElementById('btnCancelVehicleEdit').classList.remove('hidden');
+      document.getElementById('btnSaveVehicleSubmit').textContent = '💾 Atualizar Veículo';
+    }
+
+    async function loadSessions() {
+      loadVehicles();
+      try {
+        let trips = await idbGetAllTrips();
+        // Migração suave do localStorage antigo
         const raw = localStorage.getItem(STORAGE_KEY);
-        appState.sessions = raw ? JSON.parse(raw) : [];
-      } catch { appState.sessions = []; }
+        if (raw) {
+          const old = JSON.parse(raw) || [];
+          const ids = new Set(trips.map((t) => t.id));
+          for (const s of old) if (!ids.has(s.id)) { await idbPutTrip(s); trips.push(s); }
+          localStorage.removeItem(STORAGE_KEY);
+        }
+        trips.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+        appState.sessions = trips;
+      } catch {
+        try { appState.sessions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { appState.sessions = []; }
+      }
+      if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+
       try {
         const rawRef = localStorage.getItem(REFUELS_KEY);
         appState.refuels = rawRef ? JSON.parse(rawRef) : [];
@@ -698,8 +1057,9 @@
       renderAllSessionViews();
     }
 
-    function saveSessions() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.sessions)); } catch {}
+    function saveSessions(all = false) {
+      const list = all ? appState.sessions : [getCurrentSession()].filter(Boolean);
+      for (const s of list) idbPutTrip(s);
       renderAllSessionViews();
     }
 
@@ -2139,12 +2499,69 @@
         if (navigator.clipboard?.writeText) navigator.clipboard.writeText(lastAnalysisText).then(() => showToast('Análise copiada!'));
       });
 
-      // Compartilhamento nativo com Google Drive / WhatsApp (Web Share API) incluindo Abastecimentos + Viagens
+      // Eventos de Veículo & Setup Wizard
+      document.getElementById('btnSwitchVehicleHeader').addEventListener('click', () => openVehicleModal(false));
+      document.getElementById('btnOpenVehiclesManager').addEventListener('click', () => openVehicleModal(false));
+      document.getElementById('btnCloseVehicleModal').addEventListener('click', closeVehicleModal);
+      document.getElementById('btnAddNewVehicleForm').addEventListener('click', () => {
+        document.getElementById('vehicleForm').reset();
+        document.getElementById('vehEditId').value = '';
+        document.getElementById('btnCancelVehicleEdit').classList.remove('hidden');
+        document.getElementById('btnSaveVehicleSubmit').textContent = '💾 Cadastrar Veículo';
+        document.getElementById('vehNickname').focus();
+      });
+      document.getElementById('btnCancelVehicleEdit').addEventListener('click', () => {
+        populateVehicleForm(getActiveVehicle());
+      });
+      document.getElementById('btnResetVehicles').addEventListener('click', () => {
+        if (confirm('Deseja resetar as configurações de veículos e abrir o assistente de boas-vindas novamente? (Suas viagens e abastecimentos gravados continuarão intactos!)')) {
+          localStorage.removeItem(VEHICLES_KEY);
+          localStorage.removeItem(ACTIVE_VEH_KEY);
+          loadVehicles();
+          openVehicleModal(true);
+        }
+      });
+
+      document.getElementById('vehicleForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editId = document.getElementById('vehEditId').value.trim();
+        const nickname = document.getElementById('vehNickname').value.trim() || 'Meu Carro';
+        const brand = document.getElementById('vehBrand').value.trim() || 'Genérico';
+        const model = document.getElementById('vehModel').value.trim() || 'Padrão';
+        const displacement = document.getElementById('vehDisplacement').value;
+        const transmission = document.getElementById('vehTransmission').value;
+        const fuelType = document.getElementById('vehFuelType').value;
+
+        if (editId) {
+          const v = appState.vehicles.find((x) => x.id === editId);
+          if (v) {
+            v.nickname = nickname; v.brand = brand; v.model = model;
+            v.displacement = displacement; v.transmission = transmission; v.fuelType = fuelType;
+          }
+        } else {
+          const newVeh = {
+            id: 'veh_' + new Date().getTime(),
+            nickname, brand, model, displacement, transmission, fuelType,
+            createdAt: new Date().toISOString()
+          };
+          appState.vehicles.unshift(newVeh);
+          appState.activeVehicleId = newVeh.id;
+        }
+        saveVehicles();
+        closeVehicleModal();
+        showToast(`Veículo "${nickname}" salvo com sucesso!`);
+      });
+
+      // Compartilhamento nativo com Google Drive / WhatsApp (Web Share API) incluindo Abastecimentos + Viagens + Veículos
       document.getElementById('btnShareDrive').addEventListener('click', async () => {
         if (!appState.sessions.length && !appState.refuels.length) return showToast('Nenhum dado gravado ainda.');
+        const activeVeh = getActiveVehicle();
         const payload = {
-          version: '3.1',
+          app: 'OpenOBD Pulse',
+          version: '1.0.0',
           exportedAt: new Date().toISOString(),
+          vehicle: activeVeh,
+          allVehicles: appState.vehicles,
           odoOffset: appState.odoOffset,
           lastKnownOdoKm: appState.lastKnownOdoKm,
           fuelCalibFactor: appState.fuelCalibFactor,
@@ -2152,11 +2569,11 @@
           sessions: appState.sessions
         };
         const jsonBlob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const fileName = `civic2007_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        const fileName = `openobd_pulse_backup_${new Date().toISOString().slice(0, 10)}.json`;
         const file = new File([jsonBlob], fileName, { type: 'application/json' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
-            await navigator.share({ title: 'Backup Civic 2007 OBD-II & Abastecimentos', text: 'Histórico completo de abastecimentos, odômetro e viagens', files: [file] });
+            await navigator.share({ title: 'Backup OpenOBD Pulse', text: 'Histórico de viagens, veículos e abastecimentos', files: [file] });
             return;
           } catch {}
         }
