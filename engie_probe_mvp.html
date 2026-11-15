@@ -189,10 +189,28 @@
             <button id="btnToggleLive" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold">
               ▶ Ao Vivo
             </button>
+            <button id="btnEndTripNow" class="hidden px-2.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">
+              ⏹️ Encerrar
+            </button>
+            <button id="btnOpenMapHudCockpit" class="px-2.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold" title="Abrir Mapa Ao Vivo com HUD">
+              🗺️
+            </button>
             <button id="btnQuickRefuel" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
               ⛽ Posto
             </button>
           </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button id="btnToggleWakeLock" type="button" class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+              🔆 Tela Ligada: ON
+            </button>
+            <button id="btnToggleBgAudio" type="button" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold" title="Usa áudio silencioso para tentar manter gravação com tela apagada">
+              🔋 2º Plano: OFF
+            </button>
+          </div>
+          <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🤖 Rota Automática</span>
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
@@ -215,7 +233,6 @@
               </div>
             </div>
           </details>
-          <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🤖 Rota Automática</span>
         </div>
       </section>
 
@@ -407,6 +424,9 @@
               <option value="TRAFFIC">Cor: Trânsito (Velocidade)</option>
               <option value="FUEL">Cor: Consumo (km/L)</option>
             </select>
+            <button id="btnOpenMapHud" type="button" class="px-2.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold">
+              ⛶ Mapa HUD
+            </button>
           </div>
         </div>
         <div id="routeMap" class="border border-slate-800"></div>
@@ -736,6 +756,52 @@
     </div>
   </main>
 
+  <!-- Modal Mapa Ao Vivo em Tela Cheia com HUD Flutuante -->
+  <div id="mapHudModal" class="hidden fixed inset-0 z-50 bg-slate-950">
+    <div id="hudLeafletMap" class="w-full h-full"></div>
+
+    <!-- Controles Topo Esquerdo -->
+    <div class="fixed top-3 left-3 z-[1000] flex items-center gap-2">
+      <button id="btnCloseMapHud" type="button" class="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold shadow-lg backdrop-blur">
+        ✕ Voltar
+      </button>
+      <button id="btnHudFollowCar" type="button" class="px-3 py-2 rounded-xl bg-cyan-600/90 hover:bg-cyan-500 border border-cyan-400/50 text-white text-xs font-bold shadow-lg backdrop-blur">
+        🎯 Seguir: ON
+      </button>
+    </div>
+
+    <!-- HUD Flutuante no Canto -->
+    <div class="fixed bottom-4 right-3 left-3 sm:left-auto sm:w-80 z-[1000] bg-slate-950/85 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-3 shadow-2xl space-y-2">
+      <div class="flex items-baseline justify-between">
+        <div>
+          <span id="hudSpeed" class="mono text-3xl font-black text-white">--</span>
+          <span class="text-xs text-slate-400 font-bold">km/h</span>
+        </div>
+        <div class="text-right">
+          <span id="hudKml" class="mono text-2xl font-black text-emerald-400">--</span>
+          <span class="text-xs text-slate-400 block -mt-1">km/L inst.</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-1.5 text-center mono text-[11px] pt-1 border-t border-slate-800/80">
+        <div class="bg-slate-900/80 rounded-lg py-1 px-1.5">
+          <span class="text-[9px] text-slate-400 block">MARCHA / RPM</span>
+          <b id="hudGearRpm" class="text-cyan-300">N • --</b>
+        </div>
+        <div class="bg-slate-900/80 rounded-lg py-1 px-1.5">
+          <span class="text-[9px] text-slate-400 block">MÉDIA</span>
+          <b id="hudAvgKml" class="text-emerald-300">-- km/L</b>
+        </div>
+        <div class="bg-slate-900/80 rounded-lg py-1 px-1.5">
+          <span class="text-[9px] text-slate-400 block">ÁGUA</span>
+          <b id="hudCoolant" class="text-orange-300">--°C</b>
+        </div>
+      </div>
+      <div id="hudTripInfo" class="mono text-[11px] text-slate-300 text-center">
+        Trajeto: 0.0 km • 0 min • R$ 0,00
+      </div>
+    </div>
+  </div>
+
   <!-- Barra de Navegação Fixa no Rodapé (5 Abas) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800">
     <div class="max-w-5xl mx-auto grid grid-cols-5 text-center">
@@ -788,6 +854,10 @@
       liveRunning: false,
       diagBusy: false,
       wakeLock: null,
+      keepScreenOn: true,
+      bgAudioEnabled: false,
+      bgAudioEl: null,
+      ecuOffCount: 0,
       gps: null,
       gpsWatchId: null,
       vehicles: [],
@@ -822,6 +892,11 @@
       minCrankVolt: 99,
       leafletMap: null,
       leafletLayer: null,
+      hudMap: null,
+      hudLayer: null,
+      hudCarMarker: null,
+      hudFollowCar: true,
+      hudOpen: false,
       lastMetrics: {
         rpm: 0, speed: 0, gear: 'N', maf: 0, fuelLh: 0, fuelKml: 0,
         lambdaReal: 0, wbMa: 0, afr: 0, lambdaCmd: 0, lambdaDiff: 0,
@@ -852,10 +927,74 @@
     }
 
     async function requestWakeLock() {
+      if (!appState.keepScreenOn) return;
       if ('wakeLock' in navigator && !appState.wakeLock) {
-        try { appState.wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+        try {
+          appState.wakeLock = await navigator.wakeLock.request('screen');
+          appState.wakeLock.addEventListener('release', () => { appState.wakeLock = null; });
+        } catch {}
       }
     }
+
+    async function releaseWakeLock() {
+      if (appState.wakeLock) {
+        try { await appState.wakeLock.release(); } catch {}
+        appState.wakeLock = null;
+      }
+    }
+
+    function updatePowerButtonsUi() {
+      const wBtn = document.getElementById('btnToggleWakeLock');
+      if (wBtn) {
+        wBtn.textContent = appState.keepScreenOn ? '🔆 Tela Ligada: ON' : '🌙 Tela Livre: OFF';
+        wBtn.className = appState.keepScreenOn
+          ? 'px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+          : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+      }
+      const bBtn = document.getElementById('btnToggleBgAudio');
+      if (bBtn) {
+        bBtn.textContent = appState.bgAudioEnabled ? '🔋 2º Plano: ON' : '🔋 2º Plano: OFF';
+        bBtn.className = appState.bgAudioEnabled
+          ? 'px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
+          : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+      }
+    }
+
+    function startSilentBgAudio() {
+      try {
+        if (!appState.bgAudioEl) {
+          // 1s silent PCM WAV data URI (no external asset needed)
+          const silentWav = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+          const a = new Audio(silentWav);
+          a.loop = true;
+          a.volume = 0.01;
+          appState.bgAudioEl = a;
+        }
+        appState.bgAudioEl.play().catch(() => {});
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Gravando telemetria OBD-II',
+            artist: 'OpenOBD Pulse'
+          });
+        }
+      } catch {}
+    }
+
+    function stopSilentBgAudio() {
+      try { appState.bgAudioEl?.pause(); } catch {}
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && appState.keepScreenOn && appState.mode !== 'DISCONNECTED') {
+        requestWakeLock();
+      } else if (document.visibilityState === 'hidden' && appState.currentSessionId) {
+        saveSessions();
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      if (appState.currentSessionId) saveSessions();
+    });
 
     function setConnBanner(type, text) {
       const el = document.getElementById('connBanner');
@@ -2045,6 +2184,39 @@
       if (sess.routeTag) showToast(`🏁 Rota concluída: ${sess.routeTag}`);
     }
 
+    function closeActiveTrip(reason = 'Viagem encerrada') {
+      const cur = getCurrentSession();
+      if (cur && cur.rows && cur.rows.length > 0) {
+        cur.endedAt = new Date().toISOString();
+        finalizeAndTagTrip(cur);
+      }
+      appState.currentSessionId = null;
+      appState.wasEngineRunning = false;
+      appState.activeManualRouteId = null;
+      appState.autoTrip.active = false;
+      appState.autoTrip.movingSinceMs = 0;
+      appState.autoTrip.stoppedSinceMs = 0;
+
+      const btnEnd = document.getElementById('btnEndTripNow');
+      if (btnEnd) btnEnd.classList.add('hidden');
+      const sessLbl = document.getElementById('sessionLabel');
+      if (sessLbl) sessLbl.textContent = `${reason} — aguardando próxima partida`;
+      const badge = document.getElementById('autoTripStatusBadge');
+      if (badge) {
+        badge.textContent = reason;
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
+      }
+      for (const id of ['mRpm', 'mSpeed', 'mFuelKml']) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '--';
+      }
+      const flh = document.getElementById('mFuelLh');
+      if (flh) flh.textContent = '-- L/h';
+      const gr = document.getElementById('mGear');
+      if (gr) gr.textContent = 'N';
+      showToast(`🏁 ${reason} e salva!`);
+    }
+
     function handleAutoTripTick(engNow, speedKmh) {
       if (appState.activeManualRouteId) return;
       const now = Date.now();
@@ -2067,25 +2239,11 @@
         }
       } else if (at.active) {
         if (!engNow) {
-          at.active = false;
-          at.movingSinceMs = 0;
-          at.stoppedSinceMs = 0;
-          finalizeAndTagTrip(getCurrentSession());
-          if (badge) {
-            badge.textContent = 'Motor desligado — rota salva';
-            badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
-          }
+          closeActiveTrip('Motor desligado');
         } else if (speedKmh <= 2) {
           if (!at.stoppedSinceMs) at.stoppedSinceMs = now;
           if (now - at.stoppedSinceMs >= 120000) {
-            at.active = false;
-            at.movingSinceMs = 0;
-            at.stoppedSinceMs = 0;
-            finalizeAndTagTrip(getCurrentSession());
-            if (badge) {
-              badge.textContent = 'Parado > 2 min — rota salva';
-              badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
-            }
+            closeActiveTrip('Parado > 2 min');
           }
         } else {
           at.stoppedSinceMs = 0;
@@ -2289,6 +2447,66 @@
       }
     }
 
+    function openMapHud() {
+      appState.hudOpen = true;
+      document.getElementById('mapHudModal')?.classList.remove('hidden');
+      if (!appState.hudMap && window.L) {
+        const startLat = appState.gps?.lat ? +appState.gps.lat : -29.6868;
+        const startLon = appState.gps?.lon ? +appState.gps.lon : -53.8149;
+        appState.hudMap = L.map('hudLeafletMap', { zoomControl: false }).setView([startLat, startLon], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(appState.hudMap);
+        appState.hudLayer = L.layerGroup().addTo(appState.hudMap);
+      }
+      setTimeout(() => {
+        appState.hudMap?.invalidateSize();
+        renderHudMap(true);
+      }, 150);
+    }
+
+    function closeMapHud() {
+      appState.hudOpen = false;
+      document.getElementById('mapHudModal')?.classList.add('hidden');
+    }
+
+    function renderHudMap(forceFit = false) {
+      if (!appState.hudOpen || !appState.hudMap || !window.L) return;
+      appState.hudLayer.clearLayers();
+      const s = getCurrentSession() || appState.sessions[0];
+      const pts = (s?.rows || []).filter((r) => r.lat && r.lon);
+      for (let i = 1; i < pts.length; i++) {
+        const p1 = [+pts[i - 1].lat, +pts[i - 1].lon];
+        const p2 = [+pts[i].lat, +pts[i].lon];
+        const spd = pts[i].speed || 0;
+        const color = spd <= 8 ? '#ef4444' : spd <= 28 ? '#f59e0b' : '#10b981';
+        L.polyline([p1, p2], { color, weight: 6, opacity: 0.9 }).addTo(appState.hudLayer);
+      }
+      const curLat = appState.gps?.lat ? +appState.gps.lat : (pts.length ? +pts[pts.length - 1].lat : null);
+      const curLon = appState.gps?.lon ? +appState.gps.lon : (pts.length ? +pts[pts.length - 1].lon : null);
+      if (curLat && curLon) {
+        L.circleMarker([curLat, curLon], {
+          radius: 8, color: '#ffffff', weight: 3, fillColor: '#06b6d4', fillOpacity: 1
+        }).addTo(appState.hudLayer);
+        if (appState.hudFollowCar || forceFit) {
+          appState.hudMap.setView([curLat, curLon], Math.max(appState.hudMap.getZoom(), 16), { animate: true });
+        }
+      }
+      // Atualiza valores no canto HUD
+      const m = appState.lastMetrics;
+      const spdVal = m.speed || appState.gps?.spd || 0;
+      const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
+      const sum = s ? summarizeSession(s) : { distKm: 0, totalMin: 0, liters: 0, kml: 0 };
+      const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setTxt('hudSpeed', Math.round(spdVal));
+      setTxt('hudKml', m.fuelKml > 0 ? m.fuelKml.toFixed(1) : '--');
+      setTxt('hudGearRpm', `${m.gear} • ${m.rpm || '--'}`);
+      setTxt('hudAvgKml', sum.kml > 0 ? `${sum.kml.toFixed(1)} km/L` : '-- km/L');
+      setTxt('hudCoolant', `${m.coolant || '--'}°C`);
+      setTxt('hudTripInfo', `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)}`);
+    }
+
     window.openInGoogleMaps = (id) => {
       const s = appState.sessions.find((x) => x.id === id);
       if (!s) return;
@@ -2477,6 +2695,7 @@
     }
 
     function markDisconnected(msg) {
+      if (appState.currentSessionId) closeActiveTrip('Bluetooth desconectado');
       appState.liveRunning = false;
       appState.mode = 'DISCONNECTED';
       appState.bleWriteChar = null;
@@ -2673,16 +2892,22 @@
         const rRpm = extractHexBytes(await sendObdCommand('010C 1', 2000), ['41', '0C']);
         if (!rRpm) {
           // ECU desligada -> Standby inteligente (Estado 2/4)
+          appState.ecuOffCount = (appState.ecuOffCount || 0) + 1;
+          if (appState.ecuOffCount >= 3 && appState.currentSessionId) {
+            closeActiveTrip('Chave desligada');
+          }
           const atrv = cleanElmText(await sendObdCommand('ATRV', 2000));
           setConnBanner('waiting', `🟡 Estado 2/4: Scanner conectado (Bateria: ${atrv}) • Carro desligado (aguardando girar a chave...)`);
           document.getElementById('mBatteryHealth').textContent = `Pino 16: ${atrv}`;
           const atrvNum = parseVoltNumber(atrv);
           if (atrvNum > 5) updateElectricDiagnostics(atrvNum, 0, 'Pino 16 (ATRV)');
           handleAutoTripTick(false, 0);
-          await new Promise((r) => setTimeout(r, 2500));
+          if (appState.hudOpen) renderHudMap();
+          await new Promise((r) => setTimeout(r, 4000));
           await sendObdCommand('ATSP7', 1500);
           continue;
         }
+        appState.ecuOffCount = 0;
 
         appState.cycleCount += 1;
         const slowTick = appState.cycleCount % 4 === 1;
@@ -2770,6 +2995,7 @@
             if (!cur || cur.rows.length > 5) startNewSession('Partida do motor');
           }
           if (!appState.currentSessionId) startNewSession('Partida do motor');
+          document.getElementById('btnEndTripNow')?.classList.remove('hidden');
         }
         appState.wasEngineRunning = engNow;
         handleAutoTripTick(engNow, m.speed || (appState.gps?.spd || 0));
@@ -2868,6 +3094,13 @@
               pCat.textContent = `${m.o2v}V`;
               pCat.className = m.o2v >= 0.4 && m.o2v <= 0.85 ? 'text-emerald-300' : 'text-amber-300';
             }
+            if (sess.rows.length % 2 === 0) {
+              saveSessions();
+            }
+            if (appState.hudOpen) renderHudMap();
+            else if (!document.getElementById('tab-map')?.classList.contains('hidden') && sess.rows.length % 3 === 0) {
+              renderLeafletRoute();
+            }
             if (sess.rows.length % 6 === 0) {
               // Atualiza automaticamente a mistura (Gasolina % vs Álcool %) do tanque atual quando o motor está quente em Closed Loop
               if (m.coolant >= 75 && m.fuelSys === 'Closed Loop') {
@@ -2883,7 +3116,6 @@
                   try { localStorage.setItem(REFUELS_KEY, JSON.stringify(appState.refuels)); } catch {}
                 }
               }
-              saveSessions();
             }
           }
           updateOperationMatrix(m.rpm, m.load, m.timing, m.stft, m.lambdaReal);
@@ -2990,6 +3222,7 @@
           appState.gps = { lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6), spd };
           document.getElementById('gpsBadge').textContent = `📍 GPS OK`;
           document.getElementById('gpsBadge').className = 'px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] text-emerald-300';
+          if (appState.hudOpen) renderHudMap();
         },
         () => { document.getElementById('gpsBadge').textContent = '📍 Sem GPS'; },
         { enableHighAccuracy: true, maximumAge: 2000 }
@@ -2999,8 +3232,39 @@
     window.addEventListener('DOMContentLoaded', async () => {
       loadSessions();
       loadKnownPlaces();
+      updatePowerButtonsUi();
       renderMatrix();
       startGpsAlwaysOn();
+
+      document.getElementById('btnEndTripNow')?.addEventListener('click', () => {
+        closeActiveTrip('Viagem encerrada manualmente');
+      });
+      document.getElementById('btnToggleWakeLock')?.addEventListener('click', async () => {
+        appState.keepScreenOn = !appState.keepScreenOn;
+        if (appState.keepScreenOn) await requestWakeLock();
+        else await releaseWakeLock();
+        updatePowerButtonsUi();
+        showToast(appState.keepScreenOn ? '🔆 Tela mantida ligada ao dirigir.' : '🌙 Tela liberada para bloquear normalmente.');
+      });
+      document.getElementById('btnToggleBgAudio')?.addEventListener('click', () => {
+        appState.bgAudioEnabled = !appState.bgAudioEnabled;
+        if (appState.bgAudioEnabled) {
+          startSilentBgAudio();
+          showToast('🔋 Modo 2º plano ativado (dica: desative a otimização de bateria do Chrome no Android).');
+        } else {
+          stopSilentBgAudio();
+          showToast('🔋 Modo 2º plano desativado.');
+        }
+        updatePowerButtonsUi();
+      });
+      document.getElementById('btnOpenMapHud')?.addEventListener('click', openMapHud);
+      document.getElementById('btnOpenMapHudCockpit')?.addEventListener('click', openMapHud);
+      document.getElementById('btnCloseMapHud')?.addEventListener('click', closeMapHud);
+      document.getElementById('btnHudFollowCar')?.addEventListener('click', () => {
+        appState.hudFollowCar = !appState.hudFollowCar;
+        const b = document.getElementById('btnHudFollowCar');
+        if (b) b.textContent = appState.hudFollowCar ? '🎯 Seguir: ON' : '🎯 Seguir: OFF';
+      });
 
       // Navegação pelas 5 Abas do Rodapé
       document.querySelectorAll('.nav-tab-btn').forEach((btn) => {
@@ -3172,7 +3436,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.2.0',
+          version: '1.3.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

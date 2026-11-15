@@ -4,6 +4,20 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.3.0] - 2026-11-15
+### Adicionado & Corrigido
+- **Encerramento Real de Viagem ao Tirar a Chave**:
+  - Nova função `closeActiveTrip()`: fecha e salva a viagem no IndexedDB, limpa a sessão ativa e zera os mostradores após 3 ciclos sem resposta da ECU (~8s com chave desligada) ou queda do Bluetooth.
+  - Botão explícito **⏹️ Encerrar** no `🚗 Cockpit` para fechar a viagem em 1 toque.
+- **Mapa Ao Vivo em Tempo Real + Modo HUD Tela Cheia**:
+  - Atualização contínua do trajeto no mapa enquanto dirige (`update`/refresh incremental) com marcador da posição atual do carro.
+  - Novo modo **⛶ Mapa HUD** (tela cheia) com painel flutuante no canto exibindo velocidade (`km/h`), consumo instantâneo (`km/L`), média da viagem, marcha/RPM, temperatura da água (`°C`), distância e custo (`R$`), além de trava `🎯 Seguir`.
+- **Controle de Tela Ligada & Gravação em 2º Plano**:
+  - Toggles `🔆 Tela Ligada` (WakeLock com re-aquisição automática via `visibilitychange`) e `🔋 2º Plano` (áudio silencioso + `MediaSession`).
+  - Gravação no IndexedDB a cada 2 amostras + flush imediato em `visibilitychange`/`pagehide`.
+
+---
+
 ## [v1.2.0] - 2026-11-13
 ### Melhorado & Adicionado
 - **Fluidez Mobile & Modo Direção Limpo (`🚗 Cockpit`)**:
