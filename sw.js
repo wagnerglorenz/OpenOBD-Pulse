@@ -1,9 +1,32 @@
-const CACHE_NAME = 'openobd-pulse-v11';
-const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './CHANGELOG.md'];
+const CACHE_NAME = 'openobd-pulse-v12';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './CHANGELOG.md',
+  'https://cdn.tailwindcss.com/3.4.17',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const url of ASSETS) {
+        try {
+          if (url.startsWith('http')) {
+            const req = new Request(url, { mode: 'no-cors' });
+            const res = await fetch(req);
+            if (res) await cache.put(url, res);
+          } else {
+            await cache.add(url);
+          }
+        } catch {}
+      }
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -30,7 +53,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cached) => {
       const netFetch = fetch(event.request)
         .then((res) => {
-          if (res && res.ok) {
+          if (res && (res.ok || res.type === 'opaque')) {
             const copy = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
           }

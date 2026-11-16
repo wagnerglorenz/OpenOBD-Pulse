@@ -1,9 +1,9 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "minCompatibleVersion": "1.0.0",
   "schemaVersion": 2,
   "minCompatibleSchema": 1,
   "requiresReinstall": false,
   "downloadUrl": "https://wagnerglorenz.github.io/OpenOBD-Pulse/",
-  "notes": "Botão Mapa HUD ampliado, nova aba Sobre (versão + melhorias) e medidor de economia no HUD do mapa."
+  "notes": "Offline real (CSS/Mapa em cache), Mapa HUD incremental, loop OBD acelerado por PIDs e compartilhamento de perfil do carro."
 }

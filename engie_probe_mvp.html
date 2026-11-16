@@ -898,9 +898,16 @@
             <h3 class="text-xs font-bold text-cyan-300">🚗 Veículo Conectado ao App</h3>
             <p id="vehCurrentSummaryText" class="text-[11px] text-slate-300 mt-0.5">Carregando dados do veículo...</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-1.5">
             <button id="btnOpenVehiclesManager" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
               ⚙️ Trocar / Editar Veículo
+            </button>
+            <button id="btnExportVehicleProfile" type="button" class="px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold" title="Compartilhar só a ficha e sensores deste carro (sem viagens/GPS)">
+              📤 Perfil p/ Amigos
+            </button>
+            <input id="importVehicleProfileInput" type="file" accept=".json,application/json" class="hidden" />
+            <button id="btnImportVehicleProfile" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-bold">
+              📥 Importar Perfil
             </button>
           </div>
         </div>
@@ -1133,6 +1140,8 @@
       bgAudioEl: null,
       voiceAlerts: true,
       voiceCooldown: {},
+      lowVoltSinceMs: 0,
+      highVoltSinceMs: 0,
       shadowEnabled: localStorage.getItem('openobd_shadow_enabled') !== 'false',
       shadowTrip: null,
       shadowSearchDone: false,
@@ -1177,6 +1186,8 @@
       hudMap: null,
       hudLayer: null,
       hudCarMarker: null,
+      hudRenderedSessId: null,
+      hudLastDrawnIdx: 0,
       hudFollowCar: true,
       hudRotate: true,
       hudHeading: 0,
@@ -1586,6 +1597,12 @@
       '0134': 'Wideband O2 (mA)', '0142': 'Tensão ECU', '0143': 'Carga Absoluta',
       '0144': 'Lambda Alvo', '0149': 'Posição Pedal D', '014C': 'Atuador Borboleta'
     };
+
+    function isPidSupported(pid) {
+      const pids = getActiveVehicle()?.supportedPids;
+      if (!pids || !pids.length) return true;
+      return pids.includes(String(pid || '').toUpperCase());
+    }
 
     function parseSupportedPidBitmask(bytes, basePidNum) {
       if (!bytes || bytes.length < 4) return [];
@@ -3435,16 +3452,24 @@
 
     function renderHudMap(forceFit = false) {
       if (!appState.hudOpen || !appState.hudMap || !window.L) return;
-      appState.hudLayer.clearLayers();
       const s = getCurrentSession() || appState.sessions[0];
       const pts = (s?.rows || []).filter((r) => r.lat && r.lon);
-      for (let i = 1; i < pts.length; i++) {
+      const sessChanged = appState.hudRenderedSessId !== (s?.id || null);
+      if (sessChanged || pts.length < appState.hudLastDrawnIdx) {
+        appState.hudLayer.clearLayers();
+        appState.hudCarMarker = null;
+        appState.hudRenderedSessId = s?.id || null;
+        appState.hudLastDrawnIdx = 0;
+      }
+      const startIdx = Math.max(1, appState.hudLastDrawnIdx);
+      for (let i = startIdx; i < pts.length; i++) {
         const p1 = [+pts[i - 1].lat, +pts[i - 1].lon];
         const p2 = [+pts[i].lat, +pts[i].lon];
         const spd = pts[i].speed || 0;
         const color = spd <= 8 ? '#ef4444' : spd <= 28 ? '#f59e0b' : '#10b981';
         L.polyline([p1, p2], { color, weight: 6, opacity: 0.9 }).addTo(appState.hudLayer);
       }
+      if (pts.length > appState.hudLastDrawnIdx) appState.hudLastDrawnIdx = pts.length;
       const curLat = appState.gps?.lat ? +appState.gps.lat : (pts.length ? +pts[pts.length - 1].lat : null);
       const curLon = appState.gps?.lon ? +appState.gps.lon : (pts.length ? +pts[pts.length - 1].lon : null);
       const mapEl = document.getElementById('hudLeafletMap');
@@ -3454,14 +3479,19 @@
           : 'rotate(0deg) scale(1)';
       }
       if (curLat && curLon) {
-        const arrowDeg = appState.hudRotate ? appState.hudHeading : appState.hudHeading;
+        const arrowDeg = appState.hudHeading || 0;
         const carIcon = L.divIcon({
           className: '',
           html: `<div style="transform:rotate(${arrowDeg}deg);width:24px;height:24px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 4px rgba(0,0,0,0.8));"><svg width="22" height="22" viewBox="0 0 24 24"><polygon points="12,2 21,21 12,16 3,21" fill="#06b6d4" stroke="#ffffff" stroke-width="2"/></svg></div>`,
           iconSize: [24, 24],
           iconAnchor: [12, 12]
         });
-        L.marker([curLat, curLon], { icon: carIcon }).addTo(appState.hudLayer);
+        if (!appState.hudCarMarker) {
+          appState.hudCarMarker = L.marker([curLat, curLon], { icon: carIcon }).addTo(appState.hudLayer);
+        } else {
+          appState.hudCarMarker.setLatLng([curLat, curLon]);
+          appState.hudCarMarker.setIcon(carIcon);
+        }
         if (appState.hudFollowCar || forceFit) {
           appState.hudMap.setView([curLat, curLon], Math.max(appState.hudMap.getZoom(), 16), { animate: true });
         }
@@ -3906,15 +3936,15 @@
         appState.cycleCount += 1;
         const slowTick = appState.cycleCount % 4 === 1;
 
-        const rSpd = extractHexBytes(await sendObdCommand('010D 1', 1800), ['41', '0D']);
-        const rMaf = extractHexBytes(await sendObdCommand('0110 1', 1800), ['41', '10']);
-        const rLamR = extractHexBytes(await sendObdCommand('0134 1', 1800), ['41', '34']);
-        const rLamC = extractHexBytes(await sendObdCommand('0144 1', 1800), ['41', '44']);
-        const rStft = extractHexBytes(await sendObdCommand('0106 1', 1800), ['41', '06']);
-        const rTim = extractHexBytes(await sendObdCommand('010E 1', 1800), ['41', '0E']);
-        const rLoad = extractHexBytes(await sendObdCommand('0104 1', 1800), ['41', '04']);
-        const rMap = extractHexBytes(await sendObdCommand('010B 1', 1800), ['41', '0B']);
-        const rTps = extractHexBytes(await sendObdCommand('0111 1', 1800), ['41', '11']);
+        const rSpd = isPidSupported('010D') ? extractHexBytes(await sendObdCommand('010D 1', 1800), ['41', '0D']) : null;
+        const rMaf = isPidSupported('0110') ? extractHexBytes(await sendObdCommand('0110 1', 1800), ['41', '10']) : null;
+        const rLamR = isPidSupported('0134') ? extractHexBytes(await sendObdCommand('0134 1', 1800), ['41', '34']) : null;
+        const rLamC = isPidSupported('0144') ? extractHexBytes(await sendObdCommand('0144 1', 1800), ['41', '44']) : null;
+        const rStft = isPidSupported('0106') ? extractHexBytes(await sendObdCommand('0106 1', 1800), ['41', '06']) : null;
+        const rTim = isPidSupported('010E') ? extractHexBytes(await sendObdCommand('010E 1', 1800), ['41', '0E']) : null;
+        const rLoad = isPidSupported('0104') ? extractHexBytes(await sendObdCommand('0104 1', 1800), ['41', '04']) : null;
+        const rMap = isPidSupported('010B') ? extractHexBytes(await sendObdCommand('010B 1', 1800), ['41', '0B']) : null;
+        const rTps = isPidSupported('0111') ? extractHexBytes(await sendObdCommand('0111 1', 1800), ['41', '11']) : null;
 
         const m = appState.lastMetrics;
         if (rRpm.length >= 2) m.rpm = Math.round((256 * rRpm[0] + rRpm[1]) / 4);
@@ -3942,18 +3972,18 @@
         if (rTps?.length >= 1) m.tps = +((rTps[0] * 100) / 255).toFixed(1);
 
         if (slowTick) {
-          const rCool = extractHexBytes(await sendObdCommand('0105 1', 1800), ['41', '05']);
-          const rIat = extractHexBytes(await sendObdCommand('010F 1', 1800), ['41', '0F']);
-          const rVolt = extractHexBytes(await sendObdCommand('0142 1', 1800), ['41', '42']);
-          const rO2 = extractHexBytes(await sendObdCommand('0115 1', 1800), ['41', '15']);
-          const rSys = extractHexBytes(await sendObdCommand('0103 1', 1800), ['41', '03']);
-          const rAbs = extractHexBytes(await sendObdCommand('0143 1', 1800), ['41', '43']);
-          const rPed = extractHexBytes(await sendObdCommand('0149 1', 1800), ['41', '49']);
-          const rBaro = extractHexBytes(await sendObdCommand('0133 1', 1800), ['41', '33']);
-          const rEgr = extractHexBytes(await sendObdCommand('012C 1', 1800), ['41', '2C']);
-          const rEvap = extractHexBytes(await sendObdCommand('012E 1', 1800), ['41', '2E']);
-          const rDist31 = extractHexBytes(await sendObdCommand('0131 1', 1800), ['41', '31']);
-          const rTank = extractHexBytes(await sendObdCommand('012F 1', 1500), ['41', '2F']);
+          const rCool = isPidSupported('0105') ? extractHexBytes(await sendObdCommand('0105 1', 1800), ['41', '05']) : null;
+          const rIat = isPidSupported('010F') ? extractHexBytes(await sendObdCommand('010F 1', 1800), ['41', '0F']) : null;
+          const rVolt = isPidSupported('0142') ? extractHexBytes(await sendObdCommand('0142 1', 1800), ['41', '42']) : null;
+          const rO2 = isPidSupported('0115') ? extractHexBytes(await sendObdCommand('0115 1', 1800), ['41', '15']) : null;
+          const rSys = isPidSupported('0103') ? extractHexBytes(await sendObdCommand('0103 1', 1800), ['41', '03']) : null;
+          const rAbs = isPidSupported('0143') ? extractHexBytes(await sendObdCommand('0143 1', 1800), ['41', '43']) : null;
+          const rPed = isPidSupported('0149') ? extractHexBytes(await sendObdCommand('0149 1', 1800), ['41', '49']) : null;
+          const rBaro = isPidSupported('0133') ? extractHexBytes(await sendObdCommand('0133 1', 1800), ['41', '33']) : null;
+          const rEgr = isPidSupported('012C') ? extractHexBytes(await sendObdCommand('012C 1', 1800), ['41', '2C']) : null;
+          const rEvap = isPidSupported('012E') ? extractHexBytes(await sendObdCommand('012E 1', 1800), ['41', '2E']) : null;
+          const rDist31 = isPidSupported('0131') ? extractHexBytes(await sendObdCommand('0131 1', 1800), ['41', '31']) : null;
+          const rTank = isPidSupported('012F') ? extractHexBytes(await sendObdCommand('012F 1', 1500), ['41', '2F']) : null;
 
           if (rCool?.length >= 1) m.coolant = rCool[0] - 40;
           if (rIat?.length >= 1) m.iat = rIat[0] - 40;
@@ -3980,8 +4010,22 @@
           if (m.coolant >= tp.warnNearMax) {
             speakAlert('high_coolant', `Atenção! Temperatura da água em ${m.coolant} graus, próxima do limite máximo de ${tp.criticalMax} graus.`);
           }
-          if (m.rpm > 300 && m.ecuVolt > 5 && m.ecuVolt < 13.0) speakAlert('low_volt', `Alerta elétrico! Tensão do alternador baixa: ${m.ecuVolt} volts.`);
-          if (m.rpm > 300 && m.ecuVolt > 14.9) speakAlert('high_volt', `Alerta elétrico! Sobretensão no alternador: ${m.ecuVolt} volts.`);
+          if (m.rpm > 550 && m.ecuVolt > 5 && m.ecuVolt < 13.0) {
+            if (!appState.lowVoltSinceMs) appState.lowVoltSinceMs = Date.now();
+            if (Date.now() - appState.lowVoltSinceMs >= 300000) {
+              speakAlert('low_volt', `Alerta elétrico! Tensão do alternador baixa há 5 minutos: ${m.ecuVolt} volts.`);
+            }
+          } else {
+            appState.lowVoltSinceMs = 0;
+          }
+          if (m.rpm > 550 && m.ecuVolt > 14.9) {
+            if (!appState.highVoltSinceMs) appState.highVoltSinceMs = Date.now();
+            if (Date.now() - appState.highVoltSinceMs >= 15000) {
+              speakAlert('high_volt', `Alerta elétrico! Sobretensão no alternador: ${m.ecuVolt} volts.`);
+            }
+          } else {
+            appState.highVoltSinceMs = 0;
+          }
         }
 
         m.vePct = calcVolumetricEfficiency(m.rpm, m.map, m.iat, m.maf);
@@ -4255,7 +4299,7 @@
       );
     }
 
-    const APP_VERSION = '2.0.0';
+    const APP_VERSION = '2.1.0';
     const LOCAL_SCHEMA_VERSION = 2;
     let swRegistrationRef = null;
 
@@ -4710,6 +4754,57 @@
       // Eventos de Veículo & Setup Wizard
       document.getElementById('btnLookupVehicleSpecs')?.addEventListener('click', lookupVehicleOnlineAndCatalog);
       document.getElementById('btnDiscoverPids')?.addEventListener('click', () => discoverVehicleObdSensors(false));
+      document.getElementById('btnExportVehicleProfile')?.addEventListener('click', async () => {
+        const v = getActiveVehicle();
+        if (!v) return showToast('Nenhum veículo ativo.');
+        const profile = {
+          type: 'openobd_vehicle_profile',
+          version: APP_VERSION,
+          vehicle: {
+            nickname: v.nickname, brand: v.brand, model: v.model,
+            displacement: v.displacement, transmission: v.transmission, fuelType: v.fuelType,
+            tankLiters: v.tankLiters || 50, gaugeBars: v.gaugeBars ?? 20,
+            refuelTargetBars: v.refuelTargetBars ?? 2.5, thermalProfile: v.thermalProfile || 'AUTO',
+            supportedPids: v.supportedPids || [], sensorCount: v.sensorCount || 0
+          }
+        };
+        const jsonBlob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+        const safeName = `${v.brand || 'carro'}_${v.model || 'perfil'}`.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const file = new File([jsonBlob], `openobd_perfil_${safeName}.json`, { type: 'application/json' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ title: `Perfil ${v.brand} ${v.model}`, text: 'Ficha técnica e sensores OBD-II (sem viagens/GPS)', files: [file] });
+            return;
+          } catch {}
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(jsonBlob);
+        a.download = file.name;
+        a.click();
+      });
+      document.getElementById('btnImportVehicleProfile')?.addEventListener('click', () => {
+        document.getElementById('importVehicleProfileInput')?.click();
+      });
+      document.getElementById('importVehicleProfileInput')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const data = JSON.parse(await file.text());
+          const pv = data?.vehicle;
+          if (!pv || !pv.brand) throw new Error('Perfil inválido');
+          const newVeh = { ...pv, id: 'veh_' + Date.now(), createdAt: new Date().toISOString() };
+          appState.vehicles.unshift(newVeh);
+          appState.activeVehicleId = newVeh.id;
+          saveVehicles();
+          saveVehicleToLocalCatalog(newVeh);
+          switchToVehicle(newVeh.id);
+          showToast(`✅ Perfil "${newVeh.nickname || newVeh.model}" importado (${newVeh.supportedPids?.length || 0} sensores)!`);
+        } catch {
+          showToast('❌ Arquivo de perfil inválido.');
+        } finally {
+          e.target.value = '';
+        }
+      });
       document.getElementById('btnSwitchVehicleHeader').addEventListener('click', () => openVehicleModal(false));
       document.getElementById('btnOpenVehiclesManager').addEventListener('click', () => openVehicleModal(false));
       document.getElementById('btnCloseVehicleModal').addEventListener('click', closeVehicleModal);
@@ -4775,7 +4870,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '2.0.0',
+          version: '2.1.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

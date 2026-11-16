@@ -4,6 +4,16 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v2.1.0] - 2026-11-16
+### Adicionado & Otimizado
+- **100% Offline Real (`sw.js`)**: Service Worker pré-armazena e mantém em cache também Tailwind CSS e Leaflet JS/CSS (inclusive respostas cross-origin/opaque) para abrir sem internet em subsolos/garagens.
+- **Loop OBD-II Acelerado por PIDs Descobertos (`isPidSupported`)**: Pula automaticamente sensores que o veículo não possui após o mapeamento `0100/0120/0140`, aumentando a taxa de atualização no ELM327 v1.5.
+- **Mapa HUD Incremental**: Desenha apenas os segmentos novos do trajeto e reutiliza o marcador do carro, eliminando travamentos em viagens longas.
+- **Compartilhar / Importar Perfil do Carro (`📤 Perfil p/ Amigos` / `📥 Importar Perfil`)**: Permite trocar apenas a ficha técnica e o mapa de sensores do veículo com amigos, sem viagens ou dados de GPS.
+- **Filtro de 5 Minutos para Alerta de Bateria/Alternador**: Evita falso alarme ao desligar a chave; o alerta sonoro de tensão baixa (`< 13.0V`) só dispara após 5 minutos contínuos com o motor realmente ligado (`RPM > 550`).
+
+---
+
 ## [v2.0.0] - 2026-11-16
 ### Adicionado & Melhorado
 - **Botão `🗺️ Mapa HUD` Mais Evidente no Cockpit**: Ícone ampliado e rótulo claro ao lado de `📍 Só GPS` para identificar o mapa ao vivo na hora.
