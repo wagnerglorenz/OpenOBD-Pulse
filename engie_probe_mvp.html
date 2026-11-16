@@ -187,6 +187,16 @@
           </div>
         </div>
 
+        <div>
+          <label for="vehThermalProfile" class="text-[10px] text-orange-300 uppercase font-bold block">Perfil Térmico do Motor (Água)</label>
+          <select id="vehThermalProfile" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400">
+            <option value="AUTO" selected>Automático (detectar pela Marca/Modelo)</option>
+            <option value="HONDA">Honda i-VTEC / R18 (Ideal 82–105°C • Alerta 108°C)</option>
+            <option value="TURBO">VW TSI / GM Turbo / Ecotec (Ideal 85–104°C • Alerta 108°C)</option>
+            <option value="ASPIRADO">Aspirado Padrão — VW EA111/Fiat/Toyota/Ford (Ideal 82–98°C • Alerta 104°C)</option>
+          </select>
+        </div>
+
         <div class="pt-2 flex items-center justify-between gap-2">
           <button type="button" id="btnCancelVehicleEdit" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
           <div class="flex-1 text-right">
@@ -916,16 +926,21 @@
   </main>
 
   <!-- Modal Mapa Ao Vivo em Tela Cheia com HUD Flutuante -->
-  <div id="mapHudModal" class="hidden fixed inset-0 z-50 bg-slate-950">
-    <div id="hudLeafletMap" class="w-full h-full"></div>
+  <div id="mapHudModal" class="hidden fixed inset-0 z-50 bg-slate-950 overflow-hidden">
+    <div class="w-full h-full overflow-hidden">
+      <div id="hudLeafletMap" class="w-full h-full transition-transform duration-300 ease-linear"></div>
+    </div>
 
     <!-- Controles Topo Esquerdo -->
-    <div class="fixed top-3 left-3 z-[1000] flex items-center gap-2">
+    <div class="fixed top-3 left-3 z-[1000] flex flex-wrap items-center gap-2">
       <button id="btnCloseMapHud" type="button" class="px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold shadow-lg backdrop-blur">
         ✕ Voltar
       </button>
       <button id="btnHudFollowCar" type="button" class="px-3 py-2 rounded-xl bg-cyan-600/90 hover:bg-cyan-500 border border-cyan-400/50 text-white text-xs font-bold shadow-lg backdrop-blur">
         🎯 Seguir: ON
+      </button>
+      <button id="btnHudRotateMap" type="button" class="px-3 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/50 text-white text-xs font-bold shadow-lg backdrop-blur">
+        🧭 Rotação: ON
       </button>
     </div>
 
@@ -1059,6 +1074,9 @@
       hudLayer: null,
       hudCarMarker: null,
       hudFollowCar: true,
+      hudRotate: true,
+      hudHeading: 0,
+      prevGpsForHeading: null,
       hudOpen: false,
       lastMetrics: {
         rpm: 0, speed: 0, gear: 'N', maf: 0, fuelLh: 0, fuelKml: 0,
@@ -1387,6 +1405,39 @@
       });
     }
 
+    const THERMAL_PROFILES = {
+      HONDA: { label: 'Honda i-VTEC', minIdeal: 82, maxIdeal: 105, warnNearMax: 108, criticalMax: 112, fanRange: '105–107°C' },
+      TURBO: { label: 'Turbo / TSI / Ecotec', minIdeal: 85, maxIdeal: 104, warnNearMax: 108, criticalMax: 112, fanRange: '98–104°C' },
+      ASPIRADO: { label: 'Aspirado Padrão', minIdeal: 82, maxIdeal: 98, warnNearMax: 104, criticalMax: 108, fanRange: '96–101°C' },
+      UNIVERSAL: { label: 'Universal', minIdeal: 80, maxIdeal: 102, warnNearMax: 106, criticalMax: 110, fanRange: '97–104°C' }
+    };
+
+    function getVehicleThermalProfile() {
+      const v = getActiveVehicle() || {};
+      if (v.thermalProfile && v.thermalProfile !== 'AUTO' && THERMAL_PROFILES[v.thermalProfile]) {
+        return THERMAL_PROFILES[v.thermalProfile];
+      }
+      const txt = `${v.brand || ''} ${v.model || ''} ${v.nickname || ''}`.toLowerCase();
+      if (txt.includes('honda') || txt.includes('civic') || txt.includes('fit') || txt.includes('city') || txt.includes('hr-v')) {
+        return THERMAL_PROFILES.HONDA;
+      }
+      if (txt.includes('tsi') || txt.includes('turbo') || txt.includes('onix') || txt.includes('tracker') || txt.includes('cruze') || txt.includes('ecotec')) {
+        return THERMAL_PROFILES.TURBO;
+      }
+      if (txt.includes('vw') || txt.includes('volkswagen') || txt.includes('fiat') || txt.includes('toyota') || txt.includes('ford') || txt.includes('hyundai') || txt.includes('renault')) {
+        return THERMAL_PROFILES.ASPIRADO;
+      }
+      return THERMAL_PROFILES.UNIVERSAL;
+    }
+
+    function calcGpsBearing(lat1, lon1, lat2, lon2) {
+      const toRad = (d) => (d * Math.PI) / 180;
+      const toDeg = (r) => (r * 180) / Math.PI;
+      const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+      const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+      return (toDeg(Math.atan2(y, x)) + 360) % 360;
+    }
+
     // ===== GESTÃO DE VEÍCULOS (MULTI-CARROS & SETUP WIZARD) =====
     function getActiveVehicle() {
       if (!appState.vehicles || !appState.vehicles.length) return null;
@@ -1551,6 +1602,7 @@
       if (document.getElementById('vehTankLiters')) document.getElementById('vehTankLiters').value = v.tankLiters || 50;
       if (document.getElementById('vehGaugeBars')) document.getElementById('vehGaugeBars').value = v.gaugeBars ?? 20;
       if (document.getElementById('vehRefuelTargetBars')) document.getElementById('vehRefuelTargetBars').value = v.refuelTargetBars ?? 2.5;
+      if (document.getElementById('vehThermalProfile')) document.getElementById('vehThermalProfile').value = v.thermalProfile || 'AUTO';
       document.getElementById('btnCancelVehicleEdit').classList.remove('hidden');
       document.getElementById('btnSaveVehicleSubmit').textContent = '💾 Atualizar Veículo';
     }
@@ -2998,16 +3050,28 @@
       }
       const curLat = appState.gps?.lat ? +appState.gps.lat : (pts.length ? +pts[pts.length - 1].lat : null);
       const curLon = appState.gps?.lon ? +appState.gps.lon : (pts.length ? +pts[pts.length - 1].lon : null);
+      const mapEl = document.getElementById('hudLeafletMap');
+      if (mapEl) {
+        mapEl.style.transform = appState.hudRotate
+          ? `rotate(${-appState.hudHeading}deg) scale(1.42)`
+          : 'rotate(0deg) scale(1)';
+      }
       if (curLat && curLon) {
-        L.circleMarker([curLat, curLon], {
-          radius: 8, color: '#ffffff', weight: 3, fillColor: '#06b6d4', fillOpacity: 1
-        }).addTo(appState.hudLayer);
+        const arrowDeg = appState.hudRotate ? appState.hudHeading : appState.hudHeading;
+        const carIcon = L.divIcon({
+          className: '',
+          html: `<div style="transform:rotate(${arrowDeg}deg);width:24px;height:24px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 4px rgba(0,0,0,0.8));"><svg width="22" height="22" viewBox="0 0 24 24"><polygon points="12,2 21,21 12,16 3,21" fill="#06b6d4" stroke="#ffffff" stroke-width="2"/></svg></div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([curLat, curLon], { icon: carIcon }).addTo(appState.hudLayer);
         if (appState.hudFollowCar || forceFit) {
           appState.hudMap.setView([curLat, curLon], Math.max(appState.hudMap.getZoom(), 16), { animate: true });
         }
       }
       // Atualiza valores no canto HUD
       const m = appState.lastMetrics;
+      const tp = getVehicleThermalProfile();
       const spdVal = m.speed || appState.gps?.spd || 0;
       const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
       const sum = s ? summarizeSession(s) : { distKm: 0, totalMin: 0, liters: 0, kml: 0 };
@@ -3016,7 +3080,11 @@
       setTxt('hudKml', m.fuelKml > 0 ? m.fuelKml.toFixed(1) : '--');
       setTxt('hudGearRpm', `${m.gear} • ${m.rpm || '--'}`);
       setTxt('hudAvgKml', sum.kml > 0 ? `${sum.kml.toFixed(1)} km/L` : '-- km/L');
-      setTxt('hudCoolant', `${m.coolant || '--'}°C`);
+      const hc = document.getElementById('hudCoolant');
+      if (hc) {
+        hc.textContent = `${m.coolant || '--'}°C`;
+        hc.className = m.coolant >= tp.warnNearMax ? 'text-rose-400 animate-pulse' : m.coolant >= tp.minIdeal ? 'text-emerald-300' : 'text-sky-300';
+      }
       setTxt('hudTripInfo', `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)}`);
     }
 
@@ -3496,7 +3564,10 @@
             localStorage.setItem('civic2007_last_0131_km', String(km31));
           }
           if (rTank?.length >= 1) m.tankPct = Math.round((rTank[0] * 100) / 255);
-          if (m.coolant >= 102) speakAlert('high_coolant', `Atenção! Temperatura da água elevada: ${m.coolant} graus.`);
+          const tp = getVehicleThermalProfile();
+          if (m.coolant >= tp.warnNearMax) {
+            speakAlert('high_coolant', `Atenção! Temperatura da água em ${m.coolant} graus, próxima do limite máximo de ${tp.criticalMax} graus.`);
+          }
           if (m.rpm > 300 && m.ecuVolt > 5 && m.ecuVolt < 13.0) speakAlert('low_volt', `Alerta elétrico! Tensão do alternador baixa: ${m.ecuVolt} volts.`);
           if (m.rpm > 300 && m.ecuVolt > 14.9) speakAlert('high_volt', `Alerta elétrico! Sobretensão no alternador: ${m.ecuVolt} volts.`);
         }
@@ -3553,7 +3624,16 @@
         document.getElementById('mGpsSpeed').textContent = `GPS: ${appState.gps?.spd ?? '--'} km/h`;
         document.getElementById('mFuelLh').textContent = `${m.fuelLh} L/h`;
         document.getElementById('mFuelKml').textContent = m.fuelKml > 0 ? `${m.fuelKml} km/L` : '--';
-        document.getElementById('mCoolant').textContent = `${m.coolant}°C`;
+        const coolEl = document.getElementById('mCoolant');
+        if (coolEl) {
+          const tp = getVehicleThermalProfile();
+          coolEl.textContent = `${m.coolant}°C`;
+          coolEl.className = m.coolant >= tp.warnNearMax
+            ? 'mono text-xl sm:text-2xl font-extrabold text-rose-400 animate-pulse'
+            : m.coolant >= tp.minIdeal
+              ? 'mono text-xl sm:text-2xl font-extrabold text-emerald-400'
+              : 'mono text-xl sm:text-2xl font-extrabold text-sky-300';
+        }
         document.getElementById('mIat').textContent = `Ar: ${m.iat}°C`;
         document.getElementById('mStft').textContent = `${m.stft > 0 ? '+' : ''}${m.stft}%`;
         document.getElementById('mFuelSys').textContent = m.fuelSys;
@@ -3584,7 +3664,6 @@
             if (m.coolant > sess.maxCoolant) sess.maxCoolant = m.coolant;
             if (sess.secTo80 === null && m.coolant >= 80) {
               sess.secTo80 = Math.round((new Date(sess.endedAt) - new Date(sess.startedAt)) / 1000);
-              speakAlert('warm_80', 'Motor aquecido a 80 graus.', 600000);
             }
             document.getElementById('mWarmupTime').textContent = sess.secTo80 !== null ? `${sess.secTo80}s` : 'Aquecendo...';
             sess.rows.push({
@@ -3740,7 +3819,20 @@
       appState.gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
           const spd = pos.coords.speed ? +(pos.coords.speed * 3.6).toFixed(1) : 0;
-          appState.gps = { lat: pos.coords.latitude.toFixed(6), lon: pos.coords.longitude.toFixed(6), spd };
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading) && spd > 4) {
+            appState.hudHeading = Math.round(pos.coords.heading);
+          } else if (appState.prevGpsForHeading) {
+            const distM = haversineMeters(appState.prevGpsForHeading.lat, appState.prevGpsForHeading.lon, lat, lon);
+            if (distM >= 4) {
+              appState.hudHeading = Math.round(calcGpsBearing(appState.prevGpsForHeading.lat, appState.prevGpsForHeading.lon, lat, lon));
+              appState.prevGpsForHeading = { lat, lon };
+            }
+          } else {
+            appState.prevGpsForHeading = { lat, lon };
+          }
+          appState.gps = { lat: lat.toFixed(6), lon: lon.toFixed(6), spd };
           document.getElementById('gpsBadge').textContent = `📍 GPS OK`;
           document.getElementById('gpsBadge').className = 'px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] text-emerald-300';
           if (appState.hudOpen) renderHudMap();
@@ -3876,6 +3968,17 @@
         appState.hudFollowCar = !appState.hudFollowCar;
         const b = document.getElementById('btnHudFollowCar');
         if (b) b.textContent = appState.hudFollowCar ? '🎯 Seguir: ON' : '🎯 Seguir: OFF';
+      });
+      document.getElementById('btnHudRotateMap')?.addEventListener('click', () => {
+        appState.hudRotate = !appState.hudRotate;
+        const b = document.getElementById('btnHudRotateMap');
+        if (b) {
+          b.textContent = appState.hudRotate ? '🧭 Rotação: ON' : '🧭 Norte Fixo';
+          b.className = appState.hudRotate
+            ? 'px-3 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/50 text-white text-xs font-bold shadow-lg backdrop-blur'
+            : 'px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold shadow-lg backdrop-blur';
+        }
+        renderHudMap();
       });
 
       // Navegação pelas 5 Abas do Rodapé
@@ -4081,6 +4184,7 @@
         const tankLiters = parseFloat(document.getElementById('vehTankLiters')?.value || '50') || 50;
         const gaugeBars = parseInt(document.getElementById('vehGaugeBars')?.value || '20', 10);
         const refuelTargetBars = parseFloat(document.getElementById('vehRefuelTargetBars')?.value || '2.5') || 2.5;
+        const thermalProfile = document.getElementById('vehThermalProfile')?.value || 'AUTO';
 
         if (editId) {
           const v = appState.vehicles.find((x) => x.id === editId);
@@ -4088,12 +4192,13 @@
             v.nickname = nickname; v.brand = brand; v.model = model;
             v.displacement = displacement; v.transmission = transmission; v.fuelType = fuelType;
             v.tankLiters = tankLiters; v.gaugeBars = gaugeBars; v.refuelTargetBars = refuelTargetBars;
+            v.thermalProfile = thermalProfile;
           }
         } else {
           const newVeh = {
             id: 'veh_' + new Date().getTime(),
             nickname, brand, model, displacement, transmission, fuelType,
-            tankLiters, gaugeBars, refuelTargetBars,
+            tankLiters, gaugeBars, refuelTargetBars, thermalProfile,
             createdAt: new Date().toISOString()
           };
           appState.vehicles.unshift(newVeh);
@@ -4110,7 +4215,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.5.0',
+          version: '1.6.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

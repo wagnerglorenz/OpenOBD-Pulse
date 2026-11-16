@@ -4,6 +4,17 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.6.0] - 2026-11-16
+### Adicionado & Melhorado
+- **Mapa HUD com Rotação Automática no Sentido da Via (`🧭 Rotação: ON/OFF`)**:
+  - Rotação suave acompanhando a direção GPS do carro (heading/bearing) mantendo a via sempre para cima e os mostradores sempre retos.
+  - Botão de 1 toque no canto superior do Mapa HUD para alternar entre rotação automática e Norte Fixo.
+- **Perfis Térmicos Multi-Veículo & Alerta Sonoro Apenas Perto da Máxima**:
+  - Perfis calibrados por motorização (`Honda i-VTEC`, `Turbo / TSI / Ecotec`, `Aspirado Padrão` e `Universal`) com seleção automática ou manual no cadastro do carro.
+  - Removido o aviso sonoro ao atingir 80°C: o alerta por voz agora toca **exclusivamente** quando a temperatura da água se aproxima do limite máximo do motor (`108°C` no Honda/Turbo ou `104°C` nos aspirados padrão).
+
+---
+
 ## [v1.5.0] - 2026-11-16
 ### Adicionado & Melhorado
 - **Menu Separado na Aba `⛽ Posto` (`🧪 Leva & Tanque | ⛽ Abastecer | 🏆 Postos & Levas`)**:
