@@ -161,6 +161,32 @@
           </select>
         </div>
 
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="vehTankLiters" class="text-[10px] text-cyan-300 uppercase font-bold block">Tanque (Litros)</label>
+            <input id="vehTankLiters" type="number" step="1" value="50" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-white font-bold mono outline-none focus:border-cyan-400" />
+            <span class="text-[9px] text-slate-400 block mt-0.5">Civic 2007 = 50 L</span>
+          </div>
+          <div>
+            <label for="vehGaugeBars" class="text-[10px] text-emerald-300 uppercase font-bold block">Marcador Painel</label>
+            <select id="vehGaugeBars" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-white outline-none focus:border-cyan-400">
+              <option value="20" selected>20 riscos (Civic)</option>
+              <option value="12">12 riscos</option>
+              <option value="8">8 riscos</option>
+              <option value="0">Ponteiro (L)</option>
+            </select>
+          </div>
+          <div>
+            <label for="vehRefuelTargetBars" class="text-[10px] text-amber-300 uppercase font-bold block">Abastece em</label>
+            <select id="vehRefuelTargetBars" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-white outline-none focus:border-cyan-400">
+              <option value="2.5" selected>2–3 riscos (~9,5L)</option>
+              <option value="2">2 riscos (~8,5L)</option>
+              <option value="3">3 riscos (~10,5L)</option>
+              <option value="4">4 riscos (~12,5L)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="pt-2 flex items-center justify-between gap-2">
           <button type="button" id="btnCancelVehicleEdit" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancelar</button>
           <div class="flex-1 text-right">
@@ -542,102 +568,125 @@
       </section>
     </div>
 
-    <!-- ================= ABA 3: POSTO & ABASTECIMENTO ================= -->
+    <!-- ================= ABA 3: POSTO, LEVA ATUAL & TANQUE ================= -->
     <div id="tab-refuel" class="tab-pane hidden space-y-3">
-      <!-- Novo Abastecimento & Odômetro Inteligente -->
-      <section id="refuelSection" class="card p-3.5 space-y-3 border-amber-500/40">
-        <div class="flex flex-wrap items-center justify-between gap-2">
+      <!-- Menu Segmentado Interno do Posto -->
+      <div class="grid grid-cols-3 gap-1.5 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
+        <button type="button" id="btnSubTabBatch" onclick="switchRefuelSubTab('batch')" class="py-2 rounded-lg font-bold bg-amber-500 text-slate-950">🧪 Leva &amp; Tanque</button>
+        <button type="button" id="btnSubTabForm" onclick="switchRefuelSubTab('form')" class="py-2 rounded-lg font-semibold text-slate-400 hover:text-white">⛽ Abastecer</button>
+        <button type="button" id="btnSubTabHistory" onclick="switchRefuelSubTab('history')" class="py-2 rounded-lg font-semibold text-slate-400 hover:text-white">🏆 Postos &amp; Levas</button>
+      </div>
+
+      <!-- SUB-ABA 1: LEVA DE COMBUSTÍVEL ATUAL & MEDIDOR DE TANQUE CALIBRÁVEL -->
+      <div id="refuelSubBatch" class="space-y-3">
+        <!-- Atalho 1-Toque para o Abastecimento de 09/11 (21L / R$ 150) se ainda não existir -->
+        <div id="seedNov09Box" class="card p-3 border-emerald-500/40 bg-emerald-950/20 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
-            <h2 class="text-sm font-bold text-amber-300">⛽ Registrar Abastecimento &amp; Odômetro</h2>
-            <p class="text-[11px] text-slate-400">Lê o odômetro via ECU (0131) ou pergunta o valor do painel caso o carro esteja desligado.</p>
+            <div class="font-bold text-emerald-300">⚡ Abastecimento Inicial de Seg 09/11 (21,0 L • R$ 150,00)</div>
+            <div class="text-[11px] text-slate-300">Toque ao lado para registrar sua leva de 09/11 e vincular automaticamente todas as viagens feitas desde então!</div>
           </div>
-          <button id="btnReadOdoEcu" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
-            🔍 Ler Odômetro na ECU
+          <button type="button" id="btnSeedNov09Refuel" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shrink-0">
+            ✅ Ativar Leva 09/11 (21L)
           </button>
         </div>
 
-        <!-- Caixa de Pergunta Automática quando não consegue ler da ECU -->
-        <div id="odoPromptBox" class="hidden rounded-xl p-3 bg-amber-500/15 border border-amber-500/50 text-xs text-amber-100 space-y-2">
-          <div id="odoPromptMessage" class="font-semibold">
-            ⚠️ Não foi possível ler o odômetro direto da ECU agora (carro desligado na bomba ou 1ª sincronização). Qual a quilometragem atual no painel do Civic?
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button id="btnUseSuggestedOdo" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
-              ✅ Usar Estimado
-            </button>
-            <span class="text-[11px] text-amber-200">Digite ou confirme no campo <b>Odômetro Atual (km)</b> abaixo:</span>
-          </div>
-        </div>
-
-        <div id="odoSourceStatus" class="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
-          📍 Status do Odômetro: Toque em <b>🔍 Ler Odômetro na ECU</b> ou digite o valor do painel abaixo.
-        </div>
-
-        <!-- Identificação do Posto & Tipo de Gasolina -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-          <div class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelStationInput" class="text-[10px] text-cyan-300 uppercase font-bold block"> Posto de Combustível (salva seu posto padrão)</label>
-            <input id="refuelStationInput" type="text" value="Meu Posto Padrão" placeholder="Ex: Posto Ipiranga Centro / Shell..." class="w-full mt-1 bg-transparent text-white text-sm font-bold outline-none" />
-          </div>
-          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelFuelTypeSelect" class="text-[10px] text-slate-400 uppercase font-bold block">Bomba / Tipo</label>
-            <select id="refuelFuelTypeSelect" class="w-full mt-1 bg-slate-950 text-white text-sm font-bold outline-none">
-              <option value="Gasolina Comum">Gasolina Comum</option>
-              <option value="Gasolina Aditivada">Gasolina Aditivada</option>
-              <option value="Gasolina Premium">Gasolina Premium / Podium</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelOdoInput" class="text-[10px] text-amber-300 uppercase font-bold block">Odômetro Atual (km)</label>
-            <input id="refuelOdoInput" type="number" step="1" placeholder="Ex: 185420" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
-            <span id="refuelDeltaHint" class="text-[10px] text-slate-400 block mt-0.5">Painel do Civic</span>
-          </div>
-          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelPriceInput" class="text-[10px] text-slate-400 uppercase font-bold block">Valor Combustível (R$/L)</label>
-            <input id="refuelPriceInput" type="number" step="0.01" value="6.15" class="w-full mt-1 bg-transparent text-emerald-300 text-base font-extrabold mono outline-none" />
-            <span class="text-[10px] text-slate-400 block mt-0.5">Preço na bomba</span>
-          </div>
-          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelLitersInput" class="text-[10px] text-cyan-300 uppercase font-bold block">Litros no Tanque (L)</label>
-            <input id="refuelLitersInput" type="number" step="0.01" placeholder="Ex: 38.50" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
-            <span class="text-[10px] text-slate-400 block mt-0.5">Quantidade abastecida</span>
-          </div>
-          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
-            <label for="refuelTotalInput" class="text-[10px] text-purple-300 uppercase font-bold block">Total Pago (R$)</label>
-            <input id="refuelTotalInput" type="number" step="0.01" placeholder="Auto R$" class="w-full mt-1 bg-transparent text-purple-300 text-base font-extrabold mono outline-none" />
-            <span class="text-[10px] text-slate-400 block mt-0.5">Calcula litros/total sozinho</span>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
-            <input id="refuelFullTankCheck" type="checkbox" checked class="w-4 h-4 accent-emerald-500 rounded" />
-            <span>Tanque cheio (calcular média real km/L e calibrar o app automaticamente)</span>
-          </label>
-          <button id="btnSaveRefuel" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
-            💾 Registrar Abastecimento
-          </button>
-        </div>
-
-        <!-- Painel de Resumo de Abastecimentos e Média Real -->
-        <div id="refuelSummaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mono pt-1"></div>
-
-        <!-- Analisador Químico de Mistura (Gasolina % vs Álcool %) via ECU Wideband + STFT -->
-        <div class="bg-slate-950 border border-cyan-500/40 rounded-xl p-3 space-y-2.5">
+        <!-- Medidor Visual do Tanque (50L / 20 Riscos Civic) + Saldo da Leva + Autonomia até 2-3 Riscos -->
+        <section class="card p-3.5 space-y-3 border-cyan-500/30">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div class="text-xs font-bold text-cyan-300">🧪 Detector de Mistura no Tanque (% Gasolina vs % Álcool)</div>
-              <p class="text-[10px] text-slate-400">Calcula a proporção real pela correção STFT (0106) + Sonda Wideband LAF (0134) em Closed Loop.</p>
+              <h2 class="text-sm font-bold text-white">⛽ Combustível no Tanque &amp; Saldo da Leva Atual</h2>
+              <p id="tankSpecSubtitle" class="text-[11px] text-slate-400">Manual Civic 2007: Tanque 50 L (20 riscos) • Reserva ~8,5 L • Meta: abastecer com 2 a 3 riscos (~9,5 L).</p>
+            </div>
+            <button type="button" onclick="switchRefuelSubTab('form')" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
+              + Novo Abastecimento
+            </button>
+          </div>
+
+          <!-- Barra Digital de 20 Riscos (Estilo Painel New Civic) -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 font-bold">E (Reserva)</span>
+              <span id="tankGaugeBarsLabel" class="font-extrabold text-cyan-300 mono">-- / 20 riscos (~-- L)</span>
+              <span class="text-slate-400 font-bold">F (50 L)</span>
+            </div>
+            <div id="tankDigitalBarsContainer" class="grid grid-cols-20 gap-1 h-5"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs mono">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                <span class="text-[10px] text-slate-400 block">No Tanque Agora (Total)</span>
+                <b id="tankTotalLitersText" class="text-base text-white">-- L</b>
+                <span id="tankEcuSensorHint" class="text-[10px] text-slate-400 block">Tanque Virtual + OBD</span>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                <span class="text-[10px] text-slate-400 block">Saldo da Leva Atual</span>
+                <b id="batchRemainingLitersText" class="text-base text-emerald-400">-- L restantes</b>
+                <span id="batchBurnedSubText" class="text-[10px] text-slate-400 block">Queimado nas viagens: -- L</span>
+              </div>
+              <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+                <span class="text-[10px] text-slate-400 block">Autonomia até 2–3 Riscos</span>
+                <b id="tankRangeToTargetText" class="text-base text-amber-300">~-- km</b>
+                <span id="tankTargetSubText" class="text-[10px] text-slate-400 block">Antes da reserva (~9,5 L)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Regulagem / Aferição Manual pelos Riscos do Painel -->
+          <details class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs">
+            <summary class="cursor-pointer font-bold text-cyan-300 select-none">🎯 Regular / Aferir Litros ou Riscos do Painel (Caso esteja marcando diferente)</summary>
+            <div class="mt-2.5 space-y-2.5 pt-2 border-t border-slate-800 text-[11px] text-slate-300">
+              <p>
+                Olhou no painel do carro e a quantidade de riscos está diferente da estimativa acima? Escolha quantos riscos (ou litros) estão acesos no painel <b>agora</b> para alinhar o tanque e calibrar os bicos:
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400 uppercase font-bold block">Riscos no Painel Agora</label>
+                  <select id="calPanelBarsSelect" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-white font-bold outline-none">
+                    <option value="2">2 riscos (~8,5 L - Limite)</option>
+                    <option value="2.5">2 a 3 riscos (~9,5 L)</option>
+                    <option value="3">3 riscos (~10,5 L)</option>
+                    <option value="4">4 riscos (~12,5 L)</option>
+                    <option value="5">5 riscos (~14,8 L)</option>
+                    <option value="6">6 riscos (~17,0 L)</option>
+                    <option value="7">7 riscos (~19,3 L)</option>
+                    <option value="8" selected>8 riscos (~21,5 L)</option>
+                    <option value="9">9 riscos (~23,8 L)</option>
+                    <option value="10">10 riscos (~26,0 L - Meio tanque)</option>
+                    <option value="12">12 riscos (~30,5 L)</option>
+                    <option value="14">14 riscos (~35,0 L)</option>
+                    <option value="16">16 riscos (~39,5 L)</option>
+                    <option value="18">18 riscos (~44,5 L)</option>
+                    <option value="20">20 riscos (50,0 L - Cheio)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 uppercase font-bold block">Ou Litros Exatos (L)</label>
+                  <input id="calPanelLitersInput" type="number" step="0.5" placeholder="Ex: 21.5" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-white font-bold mono outline-none" />
+                </div>
+                <div class="flex items-end">
+                  <button type="button" id="btnApplyTankCalibration" class="w-full px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-extrabold">
+                    🎯 Acertar Tanque Agora
+                  </button>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        <!-- Dossiê Consolidado da Leva Atual (Todas as Viagens com Este Combustível) -->
+        <section class="card p-3.5 space-y-3 border-emerald-500/30">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="text-xs font-bold text-emerald-300">🧪 Dossiê da Leva de Combustível Ativa (Análise Acumulada entre Abastecimentos)</div>
+              <p class="text-[10px] text-slate-400">Todas as viagens desde o último abastecimento são analisadas e salvas juntas nesta leva até você abastecer novamente.</p>
             </div>
             <button id="btnScanFuelMixture" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
               🧪 Analisar Mistura Agora
             </button>
           </div>
 
-          <div id="fuelMixtureLiveBox" class="space-y-2 text-xs">
+          <div id="activeBatchDossierBox" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 text-xs"></div>
+
+          <!-- Barra Química da Leva Atual -->
+          <div id="fuelMixtureLiveBox" class="bg-slate-950 border border-cyan-500/30 rounded-xl p-3 space-y-2 text-xs">
             <div class="flex items-center justify-between text-[11px] font-bold">
               <span id="mixGasLabel" class="text-emerald-300">⛽ Gasolina Pura: ~69%</span>
               <span id="mixBadge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px]">Padrão RS (E31)</span>
@@ -648,31 +697,128 @@
               <div id="mixEthBar" class="bg-sky-500 h-full transition-all duration-300" style="width: 31%"></div>
             </div>
             <details class="text-[11px] text-slate-400">
-              <summary class="cursor-pointer text-cyan-300 font-semibold select-none">ℹ️ Como funciona a análise química</summary>
+              <summary class="cursor-pointer text-cyan-300 font-semibold select-none">ℹ️ Detalhes técnicos da leitura STFT / Wideband desta leva</summary>
               <div id="mixTechDetails" class="mono mt-1.5 text-[10px] text-slate-400">
-                💡 Dica: Após sair do posto, rode 2 a 3 km com o motor quente (&ge;75°C) para o combustível novo chegar nos bicos; o app mede e vincula automaticamente ao último abastecimento!
+                💡 Todas as leituras com motor quente (&ge;72°C) feitas nas viagens desta leva são consolidadas automaticamente.
               </div>
             </details>
           </div>
+        </section>
+      </div>
+
+      <!-- SUB-ABA 2: FORMULÁRIO DE NOVO ABASTECIMENTO -->
+      <section id="refuelSection" class="hidden card p-3.5 space-y-3 border-amber-500/40">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold text-amber-300">⛽ Registrar Abastecimento (Encerra a Leva Anterior e Inicia Nova)</h2>
+            <p class="text-[11px] text-slate-400">Funciona mesmo sem encher o tanque até a boca (usa os riscos/litros antes de abastecer).</p>
+          </div>
+          <button id="btnReadOdoEcu" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+            🔍 Ler Odômetro na ECU
+          </button>
         </div>
 
-        <!-- Classificador do Posto & Comparativo entre Abastecimentos -->
-        <div class="bg-slate-950 border border-amber-500/30 rounded-xl p-3 space-y-2">
+        <div id="odoPromptBox" class="hidden rounded-xl p-3 bg-amber-500/15 border border-amber-500/50 text-xs text-amber-100 space-y-2">
+          <div id="odoPromptMessage" class="font-semibold">
+            ⚠️ Qual a quilometragem atual no painel? (Opcional se for lançamento retroativo)
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnUseSuggestedOdo" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+              ✅ Usar Estimado
+            </button>
+            <span class="text-[11px] text-amber-200">Digite ou confirme no campo <b>Odômetro Atual (km)</b> abaixo:</span>
+          </div>
+        </div>
+
+        <div id="odoSourceStatus" class="text-[11px] text-slate-400 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2">
+          📍 Informe os dados da bomba abaixo. Se abastecer sempre nos 2 a 3 riscos finais, deixe selecionado no campo <b>Nível Antes</b>.
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+          <div class="sm:col-span-2 bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelStationInput" class="text-[10px] text-cyan-300 uppercase font-bold block">Posto de Combustível</label>
+            <input id="refuelStationInput" type="text" value="Meu Posto Padrão" placeholder="Ex: Posto Ipiranga / Shell..." class="w-full mt-1 bg-transparent text-white text-sm font-bold outline-none" />
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelFuelTypeSelect" class="text-[10px] text-slate-400 uppercase font-bold block">Bomba / Tipo</label>
+            <select id="refuelFuelTypeSelect" class="w-full mt-1 bg-slate-950 text-white text-sm font-bold outline-none">
+              <option value="Gasolina Comum">Gasolina Comum</option>
+              <option value="Gasolina Aditivada">Gasolina Aditivada</option>
+              <option value="Gasolina Premium">Gasolina Premium / Podium</option>
+            </select>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelDateInput" class="text-[10px] text-emerald-300 uppercase font-bold block">Data do Abastecimento</label>
+            <input id="refuelDateInput" type="date" class="w-full mt-1 bg-transparent text-white text-sm font-bold outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelPreBarsSelect" class="text-[10px] text-amber-300 uppercase font-bold block">Riscos Antes</label>
+            <select id="refuelPreBarsSelect" class="w-full mt-1 bg-slate-950 text-amber-300 text-sm font-extrabold outline-none">
+              <option value="2.5" selected>2–3 riscos (~9,5 L)</option>
+              <option value="2">2 riscos (~8,5 L)</option>
+              <option value="3">3 riscos (~10,5 L)</option>
+              <option value="4">4 riscos (~12,5 L)</option>
+              <option value="5">5 riscos (~14,8 L)</option>
+              <option value="8">8 riscos (~21,5 L)</option>
+              <option value="10">10 riscos (~26,0 L)</option>
+            </select>
+            <span class="text-[10px] text-slate-400 block mt-0.5">No painel ao parar</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelOdoInput" class="text-[10px] text-amber-300 uppercase font-bold block">Odômetro (km)</label>
+            <input id="refuelOdoInput" type="number" step="1" placeholder="Opcional se antigo" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
+            <span id="refuelDeltaHint" class="text-[10px] text-slate-400 block mt-0.5">Painel do carro</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelPriceInput" class="text-[10px] text-slate-400 uppercase font-bold block">Preço (R$/L)</label>
+            <input id="refuelPriceInput" type="number" step="0.01" value="7.14" class="w-full mt-1 bg-transparent text-emerald-300 text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Valor do litro</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelLitersInput" class="text-[10px] text-cyan-300 uppercase font-bold block">Litros (L)</label>
+            <input id="refuelLitersInput" type="number" step="0.01" placeholder="Ex: 21.00" class="w-full mt-1 bg-transparent text-white text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Litros na bomba</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-700 rounded-xl p-2.5">
+            <label for="refuelTotalInput" class="text-[10px] text-purple-300 uppercase font-bold block">Total Pago (R$)</label>
+            <input id="refuelTotalInput" type="number" step="0.01" placeholder="Ex: 150.00" class="w-full mt-1 bg-transparent text-purple-300 text-base font-extrabold mono outline-none" />
+            <span class="text-[10px] text-slate-400 block mt-0.5">Calcula sozinho</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+            <input id="refuelFullTankCheck" type="checkbox" class="w-4 h-4 accent-emerald-500 rounded" />
+            <span>Enchi até a boca (desmarque quando abastecer valor parcial nos 2 a 3 riscos)</span>
+          </label>
+          <button id="btnSaveRefuel" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
+            💾 Salvar Abastecimento &amp; Iniciar Nova Leva
+          </button>
+        </div>
+      </section>
+
+      <!-- SUB-ABA 3: RANKING DE POSTOS & HISTÓRICO DE LEVAS -->
+      <div id="refuelSubHistory" class="hidden space-y-3">
+        <div id="refuelSummaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mono"></div>
+
+        <div class="card p-3.5 space-y-2 border-amber-500/30">
           <div class="text-xs font-bold text-amber-300">🏆 Classificador do Posto &amp; Variação da Mistura entre Abastecimentos</div>
           <div id="stationClassifierBox" class="space-y-2 text-xs"></div>
         </div>
 
-        <!-- Histórico de Abastecimentos -->
-        <div class="space-y-2 pt-1">
+        <div class="card p-3.5 space-y-2">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase text-slate-400">Histórico de Abastecimentos &amp; Médias de Tanque</h3>
+            <h3 class="text-xs font-bold uppercase text-slate-400">Histórico de Levas de Combustível &amp; Abastecimentos</h3>
             <button id="btnExportRefuelsCsv" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px] font-semibold">
-              📊 Exportar Postos CSV
+              📊 Exportar CSV
             </button>
           </div>
           <div id="refuelsList" class="space-y-2 text-xs"></div>
         </div>
-      </section>
+      </div>
     </div>
 
     <!-- ================= ABA 5: CUSTOS, HISTÓRICO & DRIVE ================= -->
@@ -1402,6 +1548,9 @@
       document.getElementById('vehDisplacement').value = v.displacement || '1.8';
       document.getElementById('vehTransmission').value = v.transmission || 'MANUAL_5';
       document.getElementById('vehFuelType').value = v.fuelType || 'E32';
+      if (document.getElementById('vehTankLiters')) document.getElementById('vehTankLiters').value = v.tankLiters || 50;
+      if (document.getElementById('vehGaugeBars')) document.getElementById('vehGaugeBars').value = v.gaugeBars ?? 20;
+      if (document.getElementById('vehRefuelTargetBars')) document.getElementById('vehRefuelTargetBars').value = v.refuelTargetBars ?? 2.5;
       document.getElementById('btnCancelVehicleEdit').classList.remove('hidden');
       document.getElementById('btnSaveVehicleSubmit').textContent = '💾 Atualizar Veículo';
     }
@@ -1814,18 +1963,235 @@
       }).join('');
     }
 
+    window.switchRefuelSubTab = (sub) => {
+      const views = {
+        batch: document.getElementById('refuelSubBatch'),
+        form: document.getElementById('refuelSection'),
+        history: document.getElementById('refuelSubHistory')
+      };
+      const btns = {
+        batch: document.getElementById('btnSubTabBatch'),
+        form: document.getElementById('btnSubTabForm'),
+        history: document.getElementById('btnSubTabHistory')
+      };
+      for (const k of ['batch', 'form', 'history']) {
+        if (views[k]) views[k].classList.toggle('hidden', k !== sub);
+        if (btns[k]) {
+          btns[k].className = k === sub
+            ? 'py-2 rounded-lg font-bold bg-amber-500 text-slate-950'
+            : 'py-2 rounded-lg font-semibold text-slate-400 hover:text-white';
+        }
+      }
+    };
+
+    function getVehicleTankConfig() {
+      const v = getActiveVehicle() || {};
+      const tankLiters = parseFloat(v.tankLiters) || 50;
+      const gaugeBars = parseInt(v.gaugeBars ?? 20, 10) || 20;
+      const refuelTargetBars = parseFloat(v.refuelTargetBars) || 2.5;
+      const reserveLiters = +(tankLiters * 0.17).toFixed(1); // ~8.5L no Civic 50L
+      return { tankLiters, gaugeBars, refuelTargetBars, reserveLiters };
+    }
+
+    function barsToLiters(bars, cfg = getVehicleTankConfig()) {
+      const b = Math.max(0, Math.min(cfg.gaugeBars, parseFloat(bars) || 0));
+      if (b === 0) return 0;
+      if (cfg.gaugeBars === 20 && cfg.tankLiters === 50) {
+        if (b <= 2) return +(b * 4.25).toFixed(1); // 2 riscos = ~8.5L (reserva)
+        return +(8.5 + (b - 2) * ((50 - 8.5) / 18)).toFixed(1);
+      }
+      return +((b / cfg.gaugeBars) * cfg.tankLiters).toFixed(1);
+    }
+
+    function litersToBars(liters, cfg = getVehicleTankConfig()) {
+      const l = Math.max(0, Math.min(cfg.tankLiters, parseFloat(liters) || 0));
+      if (cfg.gaugeBars === 20 && cfg.tankLiters === 50) {
+        if (l <= 8.5) return Math.max(0, Math.round((l / 8.5) * 2));
+        return Math.min(20, Math.round(2 + ((l - 8.5) / (50 - 8.5)) * 18));
+      }
+      return Math.min(cfg.gaugeBars, Math.round((l / cfg.tankLiters) * cfg.gaugeBars));
+    }
+
+    // Consolida todas as viagens pertencentes a uma Leva de Combustível (entre este abastecimento e o próximo)
+    function computeRefuelBatchStats(ref, nextRefTs = null) {
+      if (!ref) return null;
+      const startMs = new Date(ref.ts).getTime();
+      const endMs = nextRefTs ? new Date(nextRefTs).getTime() : Infinity;
+      const trips = [];
+      let km = 0, litersBurned = 0, idleLiters = 0, stops = 0, totalMin = 0;
+      const warmRows = [];
+
+      for (const s of getVehicleSessions()) {
+        const sMs = new Date(s.startedAt).getTime();
+        if (sMs >= startMs && sMs < endMs && s.rows?.length > 1) {
+          const sum = summarizeSession(s);
+          trips.push({ id: s.id, label: s.label, routeTag: s.routeTag || '', km: +sum.distKm.toFixed(2), liters: +sum.liters.toFixed(2), kml: +sum.kml.toFixed(1) });
+          km += sum.distKm;
+          if (!s.isGpsOnly) {
+            litersBurned += sum.liters;
+            idleLiters += sum.idleLiters;
+          }
+          stops += sum.stops;
+          totalMin += sum.totalMin;
+          for (const r of (s.rows || [])) {
+            if ((r.coolant || 0) >= 72 && (r.rpm || 0) > 500 && typeof r.stft === 'number') {
+              warmRows.push(r);
+            }
+          }
+        }
+      }
+
+      let mix = null;
+      if (warmRows.length > 0) {
+        const avgStft = warmRows.reduce((a, r) => a + r.stft, 0) / warmRows.length;
+        const avgLamR = warmRows.reduce((a, r) => a + (r.lambdaReal || 1), 0) / warmRows.length;
+        const avgLamC = warmRows.reduce((a, r) => a + (r.lambdaCmd || 1), 0) / warmRows.length;
+        mix = estimateFuelMixtureFromEcu(avgStft, avgLamR, avgLamC);
+        ref.gasPct = mix.gasPct;
+        ref.ethanolPct = mix.ethanolPct;
+        ref.stftAvg = mix.stft;
+        ref.qualityLabel = mix.qualityLabel;
+        ref.qualityScore = mix.score;
+      }
+
+      const obdKml = litersBurned > 0.05 && km > 0.2 ? +(km / litersBurned).toFixed(2) : null;
+      if (obdKml) ref.obdKml = obdKml;
+
+      const report = {
+        tripsCount: trips.length,
+        km: +km.toFixed(2),
+        litersBurned: +litersBurned.toFixed(2),
+        remainingFromBatch: +Math.max(0, (ref.liters || 0) - litersBurned).toFixed(2),
+        idleLiters: +idleLiters.toFixed(2),
+        stops,
+        totalMin: +totalMin.toFixed(1),
+        obdKml,
+        warmSamplesCount: warmRows.length,
+        trips: trips.slice(0, 15),
+        updatedAt: new Date().toISOString()
+      };
+      ref.batchReport = report;
+      return { report, mix };
+    }
+
+    function renderActiveBatchAndTank() {
+      const cfg = getVehicleTankConfig();
+      const vehRefs = getVehicleRefuels();
+      const activeRef = vehRefs[0] || null;
+
+      // Mostra/esconde atalho da leva de 09/11
+      const seedBox = document.getElementById('seedNov09Box');
+      if (seedBox) {
+        const hasNov09 = vehRefs.some((r) => String(r.ts || '').startsWith('2026-11-09') || r.id === 'ref_20261109');
+        seedBox.classList.toggle('hidden', hasNov09);
+      }
+
+      const subEl = document.getElementById('tankSpecSubtitle');
+      if (subEl) {
+        subEl.textContent = `Tanque ${cfg.tankLiters} L (${cfg.gaugeBars || 20} riscos) • Reserva ~${cfg.reserveLiters} L • Meta: abastecer com ${cfg.refuelTargetBars} riscos (~${barsToLiters(cfg.refuelTargetBars, cfg)} L).`;
+      }
+
+      // Consolida todas as levas em ordem cronológica
+      for (let i = 0; i < vehRefs.length; i++) {
+        const newerTs = i > 0 ? vehRefs[i - 1].ts : null;
+        computeRefuelBatchStats(vehRefs[i], newerTs);
+      }
+      try { localStorage.setItem(REFUELS_KEY, JSON.stringify(appState.refuels)); } catch {}
+
+      const activeStats = activeRef ? computeRefuelBatchStats(activeRef, null) : null;
+      const rep = activeStats?.report || { tripsCount: 0, km: 0, litersBurned: 0, remainingFromBatch: 0, obdKml: null, warmSamplesCount: 0, trips: [] };
+      const preLiters = activeRef ? (activeRef.preTankLiters ?? barsToLiters(activeRef.preTankBars ?? cfg.refuelTargetBars, cfg)) : barsToLiters(cfg.refuelTargetBars, cfg);
+      const addedLiters = activeRef ? (activeRef.liters || 0) : 0;
+      const manualAdj = activeRef ? (activeRef.manualAdjustLiters || 0) : 0;
+      const startTankLiters = Math.min(cfg.tankLiters, preLiters + addedLiters);
+      const currentTankLiters = Math.max(0, Math.min(cfg.tankLiters, +(startTankLiters + manualAdj - rep.litersBurned).toFixed(1)));
+      const currentBars = litersToBars(currentTankLiters, cfg);
+      const targetLiters = barsToLiters(cfg.refuelTargetBars, cfg);
+      const usableToTargetLiters = Math.max(0, +(currentTankLiters - targetLiters).toFixed(1));
+      const refKml = rep.obdKml || activeRef?.pumpKml || 9.8;
+      const rangeToTargetKm = Math.round(usableToTargetLiters * refKml);
+
+      // Renderiza as 20 barras digitais
+      const barsBox = document.getElementById('tankDigitalBarsContainer');
+      const totalBars = cfg.gaugeBars > 0 ? cfg.gaugeBars : 20;
+      if (barsBox) {
+        barsBox.style.display = 'grid';
+        barsBox.style.gridTemplateColumns = `repeat(${totalBars}, minmax(0, 1fr))`;
+        let html = '';
+        for (let b = 1; b <= totalBars; b++) {
+          const filled = b <= currentBars;
+          let color = 'bg-slate-800/80';
+          if (filled) {
+            color = b <= 2 ? 'bg-rose-500' : b <= Math.ceil(cfg.refuelTargetBars) ? 'bg-amber-400' : 'bg-cyan-400';
+          }
+          html += `<div class="h-full rounded-sm ${color} transition-all"></div>`;
+        }
+        barsBox.innerHTML = html;
+      }
+
+      const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      setTxt('tankGaugeBarsLabel', `${currentBars} / ${totalBars} riscos (~${currentTankLiters.toFixed(1)} L de ${cfg.tankLiters} L)`);
+      setTxt('tankTotalLitersText', `${currentTankLiters.toFixed(1)} L (${currentBars} riscos)`);
+      setTxt('tankEcuSensorHint', typeof appState.lastMetrics.tankPct === 'number'
+        ? `Boia ECU 012F: ${appState.lastMetrics.tankPct}% • Partiu de ${startTankLiters.toFixed(1)} L`
+        : `Partiu de ${preLiters.toFixed(1)}L + ${addedLiters.toFixed(1)}L = ${startTankLiters.toFixed(1)}L`);
+      setTxt('batchRemainingLitersText', activeRef ? `${rep.remainingFromBatch.toFixed(1)} L de ${addedLiters.toFixed(1)} L` : 'Sem leva ativa');
+      setTxt('batchBurnedSubText', activeRef ? `Consumido nas viagens: ${rep.litersBurned.toFixed(2)} L` : 'Cadastre o abastecimento');
+      setTxt('tankRangeToTargetText', usableToTargetLiters > 0.2 ? `~${rangeToTargetKm} km` : '⚠️ Na faixa de abastecer!');
+      setTxt('tankTargetSubText', `Margem acima dos ${cfg.refuelTargetBars} riscos: ${usableToTargetLiters.toFixed(1)} L`);
+
+      // Dossiê da Leva Ativa
+      const dosBox = document.getElementById('activeBatchDossierBox');
+      if (dosBox) {
+        if (!activeRef) {
+          dosBox.innerHTML = `<div class="text-slate-400">Nenhuma leva de combustível ativa. Toque em <b>✅ Ativar Leva 09/11 (21L)</b> acima ou registre um abastecimento.</div>`;
+        } else {
+          const mixTxt = typeof activeRef.ethanolPct === 'number'
+            ? `<span class="text-emerald-300 font-bold">${activeRef.gasPct}% Gasolina / ${activeRef.ethanolPct}% Álcool</span> (STFT médio ${activeRef.stftAvg > 0 ? '+' : ''}${activeRef.stftAvg}% em ${rep.warmSamplesCount} leituras quentes)`
+            : `<span class="text-amber-300">Aguardando leituras com motor quente (&ge;72°C) nas viagens desta leva</span>`;
+          const tripsHtml = rep.trips.length
+            ? `<div class="pt-1.5 border-t border-slate-800 space-y-1 max-h-36 overflow-y-auto mono text-[10px] text-slate-300">
+                 <div class="text-slate-400 font-sans font-bold">Viagens vinculadas a esta leva (${rep.tripsCount}):</div>
+                 ${rep.trips.map((t) => `<div>• ${t.routeTag ? '[' + t.routeTag + '] ' : ''}${t.label}: <b>${t.km} km</b> • <b>${t.liters} L</b> (${t.kml} km/L)</div>`).join('')}
+               </div>`
+            : `<div class="text-[11px] text-slate-400 pt-1">Nenhuma viagem realizada após a data deste abastecimento ainda.</div>`;
+          dosBox.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="font-bold text-white">⛽ Leva Ativa: ${activeRef.label.slice(0, 10)} — ${activeRef.stationName} (${activeRef.fuelType})</div>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">
+                Colocou ${activeRef.liters.toFixed(1)} L (R$ ${activeRef.totalCost.toFixed(2)})
+              </span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mono text-[11px] pt-1">
+              <div class="bg-slate-900 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Viagens na Leva</span><b class="text-white">${rep.tripsCount} viagens</b></div>
+              <div class="bg-slate-900 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Rodado na Leva</span><b class="text-cyan-300">${rep.km.toFixed(1)} km</b></div>
+              <div class="bg-slate-900 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Queimado / Saldo</span><b class="text-emerald-300">${rep.litersBurned.toFixed(2)}L / ${rep.remainingFromBatch.toFixed(1)}L</b></div>
+              <div class="bg-slate-900 rounded-lg p-2"><span class="text-[10px] text-slate-400 block">Média OBD da Leva</span><b class="text-amber-300">${rep.obdKml ? rep.obdKml + ' km/L' : '--'}</b></div>
+            </div>
+            <div class="text-[11px] text-slate-200 pt-1">🧪 <b>Qualidade consolidada da leva:</b> ${mixTxt}</div>
+            ${tripsHtml}
+          `;
+          if (activeStats?.mix) {
+            updateMixtureUiBox(activeStats.mix, `Média consolidada de ${rep.warmSamplesCount} amostras quentes em ${rep.tripsCount} viagem(ns) desta leva`);
+          }
+        }
+      }
+    }
+
     function renderRefuelViews() {
+      renderActiveBatchAndTank();
       const grid = document.getElementById('refuelSummaryGrid');
       const list = document.getElementById('refuelsList');
       if (!grid || !list) return;
 
-      const lastRef = appState.refuels[0] || null;
+      const vehRefs = getVehicleRefuels();
+      const lastRef = vehRefs[0] || null;
       const sinceLast = calcSessionsSince(lastRef?.ts || null);
       const estOdo = getEstimatedCurrentOdometer();
 
       // Calcula médias globais de bomba
       let totalLiters = 0, totalSpent = 0, validDeltaKm = 0, validPumpLiters = 0;
-      for (const r of appState.refuels) {
+      for (const r of vehRefs) {
         totalLiters += r.liters || 0;
         totalSpent += r.totalCost || 0;
         if (r.deltaKm > 0 && r.liters > 0 && r.fullTank) {
@@ -1862,20 +2228,20 @@
       updateRefuelDeltaPreview();
       renderStationClassifier();
 
-      if (!appState.refuels.length) {
-        list.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhum abastecimento registrado ainda. No próximo posto, preencha o valor, os litros e o odômetro acima!</div>';
+      if (!vehRefs.length) {
+        list.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhum abastecimento registrado ainda.</div>';
         return;
       }
 
-      list.innerHTML = appState.refuels.map((r) => `
+      list.innerHTML = vehRefs.map((r) => `
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <div class="font-bold text-white flex flex-wrap items-center gap-1.5">
               <span>⛽ ${r.label}</span>
               <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">🏪 ${r.stationName || 'Meu Posto Padrão'} (${r.fuelType || 'Gasolina Comum'})</span>
-              <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 mono">Odômetro: ${r.odoKm.toLocaleString('pt-BR')} km</span>
-              ${r.deltaKm ? `<span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">+${r.deltaKm} km rodados</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">1º Marco de Odômetro</span>'}
-              ${typeof r.ethanolPct === 'number' ? `<span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🧪 ${r.gasPct}% Gasolina / ${r.ethanolPct}% Álcool (${r.qualityLabel || ''})</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">🧪 Mistura: rode 2 km ou toque em Medir</span>'}
+              ${r.odoKm ? `<span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 mono">Odômetro: ${r.odoKm.toLocaleString('pt-BR')} km</span>` : ''}
+              ${r.batchReport ? `<span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">Leva: ${r.batchReport.tripsCount} viagens (${r.batchReport.km} km • ${r.batchReport.litersBurned}L gastos)</span>` : ''}
+              ${typeof r.ethanolPct === 'number' ? `<span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🧪 ${r.gasPct}% Gasolina / ${r.ethanolPct}% Álcool (${r.qualityLabel || ''})</span>` : '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">🧪 Mistura: consolidando viagens</span>'}
             </div>
             <div class="mono text-[11px] text-slate-300 mt-1">
               <b>${r.liters.toFixed(2)} L</b> × R$ ${r.pricePerLiter.toFixed(2)}/L = <b class="text-amber-300">R$ ${r.totalCost.toFixed(2)}</b>
@@ -1903,17 +2269,19 @@
       const priceInput = document.getElementById('refuelPriceInput');
       const litersInput = document.getElementById('refuelLitersInput');
       const totalInput = document.getElementById('refuelTotalInput');
-      const fullTank = document.getElementById('refuelFullTankCheck')?.checked ?? true;
+      const dateInput = document.getElementById('refuelDateInput');
+      const preBarsSel = document.getElementById('refuelPreBarsSelect');
+      const fullTank = document.getElementById('refuelFullTankCheck')?.checked ?? false;
 
       let odoKm = parseFloat(odoInput.value);
       const pricePerLiter = parseFloat(priceInput.value);
       let liters = parseFloat(litersInput.value);
       let totalCost = parseFloat(totalInput.value);
+      const preTankBars = parseFloat(preBarsSel?.value || '2.5') || 2.5;
+      const preTankLiters = barsToLiters(preTankBars);
 
-      // Se o usuário não preencheu o odômetro e o app não conseguiu ler da ECU, faz a pergunta agora
-      if (!odoKm || odoKm <= 0) {
-        readOdometerForRefuel();
-        return showToast('Informe ou confirme o valor atual do odômetro no campo destacado!');
+      if (!odoKm || isNaN(odoKm) || odoKm < 0) {
+        odoKm = getEstimatedCurrentOdometer() || 0;
       }
       if (!pricePerLiter || pricePerLiter <= 0) {
         priceInput.focus();
@@ -1933,12 +2301,9 @@
       }
 
       const prev = getVehicleRefuels()[0] || null;
-      if (prev && odoKm < prev.odoKm) {
-        return showToast(`O odômetro atual (${odoKm} km) não pode ser menor que o último posto (${prev.odoKm} km).`);
-      }
-
-      const now = new Date();
-      const deltaKm = prev && odoKm > prev.odoKm ? +(odoKm - prev.odoKm).toFixed(1) : null;
+      const dateVal = dateInput?.value;
+      const now = dateVal ? new Date(dateVal + 'T08:00:00') : new Date();
+      const deltaKm = prev && odoKm > 0 && prev.odoKm > 0 && odoKm > prev.odoKm ? +(odoKm - prev.odoKm).toFixed(1) : null;
       const pumpKml = deltaKm && liters > 0 ? +(deltaKm / liters).toFixed(2) : null;
       const costPerKm = deltaKm && totalCost > 0 ? +(totalCost / deltaKm).toFixed(2) : null;
 
@@ -1990,6 +2355,8 @@
         liters,
         pricePerLiter,
         totalCost,
+        preTankBars,
+        preTankLiters,
         fullTank,
         pumpKml,
         costPerKm,
@@ -2003,7 +2370,9 @@
       };
 
       appState.refuels.unshift(rec);
+      appState.refuels.sort((a, b) => new Date(b.ts) - new Date(a.ts));
       saveRefuels();
+      switchRefuelSubTab('batch');
 
       litersInput.value = '';
       totalInput.value = '';
@@ -3569,12 +3938,69 @@
       });
 
       // Eventos de Abastecimento & Odômetro Inteligente
+      const dtEl = document.getElementById('refuelDateInput');
+      if (dtEl && !dtEl.value) dtEl.value = new Date().toISOString().slice(0, 10);
+
+      document.getElementById('btnSeedNov09Refuel')?.addEventListener('click', () => {
+        const cfg = getVehicleTankConfig();
+        const rec = {
+          id: 'ref_20261109',
+          vehicleId: getActiveVehicleId(),
+          ts: '2026-11-09T08:00:00.000Z',
+          label: '09/11/2026, 08:00',
+          stationName: localStorage.getItem('civic2007_last_station') || 'Meu Posto Padrão',
+          fuelType: 'Gasolina Comum',
+          odoKm: getEstimatedCurrentOdometer() || 0,
+          deltaKm: null,
+          liters: 21.0,
+          pricePerLiter: 7.14,
+          totalCost: 150.00,
+          preTankBars: 2.5,
+          preTankLiters: barsToLiters(2.5, cfg),
+          fullTank: false
+        };
+        appState.refuels = appState.refuels.filter((r) => r.id !== 'ref_20261109');
+        appState.refuels.push(rec);
+        appState.refuels.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+        saveRefuels();
+        showToast('✅ Leva de 09/11 (21,0 L • R$ 150,00) ativada e viagens vinculadas!');
+      });
+
+      document.getElementById('btnApplyTankCalibration')?.addEventListener('click', () => {
+        const vehRefs = getVehicleRefuels();
+        const activeRef = vehRefs[0];
+        if (!activeRef) return showToast('Ative a leva de 09/11 ou registre um abastecimento primeiro.');
+        const cfg = getVehicleTankConfig();
+        const litInput = document.getElementById('calPanelLitersInput');
+        const barsSel = document.getElementById('calPanelBarsSelect');
+        const manualLiters = parseFloat(litInput?.value || '');
+        const desiredLiters = (!isNaN(manualLiters) && manualLiters >= 0)
+          ? Math.min(cfg.tankLiters, manualLiters)
+          : barsToLiters(parseFloat(barsSel?.value || '8'), cfg);
+
+        const stats = computeRefuelBatchStats(activeRef, null);
+        const burned = stats?.report?.litersBurned || 0;
+        const preLiters = activeRef.preTankLiters ?? barsToLiters(activeRef.preTankBars ?? cfg.refuelTargetBars, cfg);
+        const startTank = Math.min(cfg.tankLiters, preLiters + (activeRef.liters || 0));
+        const unadjustedNow = startTank - burned;
+        activeRef.manualAdjustLiters = +(desiredLiters - unadjustedNow).toFixed(2);
+
+        // Se já queimou mais de 1.5L na leva, aproveita a aferição do painel para ajustar suavemente o fator de calibração dos bicos
+        const realBurned = startTank - desiredLiters;
+        if (burned > 1.5 && realBurned > 1.0) {
+          const ratio = Math.min(1.25, Math.max(0.75, realBurned / burned));
+          appState.fuelCalibFactor = +(0.75 * appState.fuelCalibFactor + 0.25 * ratio).toFixed(3);
+          localStorage.setItem('civic2007_fuel_calib', String(appState.fuelCalibFactor));
+        }
+
+        if (litInput) litInput.value = '';
+        saveRefuels();
+        showToast(`🎯 Tanque ajustado para ${desiredLiters.toFixed(1)} L (${litersToBars(desiredLiters, cfg)} riscos)!`);
+      });
+
       document.getElementById('btnQuickRefuel').addEventListener('click', () => {
         document.querySelector('[data-tab="tab-refuel"]').click();
-        setTimeout(() => {
-          document.getElementById('refuelSection')?.scrollIntoView({ behavior: 'smooth' });
-          readOdometerForRefuel();
-        }, 120);
+        switchRefuelSubTab('batch');
       });
       document.getElementById('btnReadOdoEcu').addEventListener('click', readOdometerForRefuel);
       document.getElementById('btnSaveRefuel').addEventListener('click', saveRefuelRecord);
@@ -3652,17 +4078,22 @@
         const displacement = document.getElementById('vehDisplacement').value;
         const transmission = document.getElementById('vehTransmission').value;
         const fuelType = document.getElementById('vehFuelType').value;
+        const tankLiters = parseFloat(document.getElementById('vehTankLiters')?.value || '50') || 50;
+        const gaugeBars = parseInt(document.getElementById('vehGaugeBars')?.value || '20', 10);
+        const refuelTargetBars = parseFloat(document.getElementById('vehRefuelTargetBars')?.value || '2.5') || 2.5;
 
         if (editId) {
           const v = appState.vehicles.find((x) => x.id === editId);
           if (v) {
             v.nickname = nickname; v.brand = brand; v.model = model;
             v.displacement = displacement; v.transmission = transmission; v.fuelType = fuelType;
+            v.tankLiters = tankLiters; v.gaugeBars = gaugeBars; v.refuelTargetBars = refuelTargetBars;
           }
         } else {
           const newVeh = {
             id: 'veh_' + new Date().getTime(),
             nickname, brand, model, displacement, transmission, fuelType,
+            tankLiters, gaugeBars, refuelTargetBars,
             createdAt: new Date().toISOString()
           };
           appState.vehicles.unshift(newVeh);
@@ -3679,7 +4110,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.4.0',
+          version: '1.5.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

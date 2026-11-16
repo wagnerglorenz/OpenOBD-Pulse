@@ -4,6 +4,19 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.5.0] - 2026-11-16
+### Adicionado & Melhorado
+- **Menu Separado na Aba `⛽ Posto` (`🧪 Leva & Tanque | ⛽ Abastecer | 🏆 Postos & Levas`)**:
+  - Organização limpa separando o acompanhamento diário da leva atual, o formulário de bomba e o histórico/ranking.
+- **Leva de Combustível Ativa & Dossiê Consolidado entre Abastecimentos**:
+  - Atalho de 1 toque para lançar o abastecimento retroativo de **Seg 09/11 (21,0 L • R$ 150,00)** e campo de data em todos os abastecimentos.
+  - Todas as viagens feitas desde o abastecimento entram automaticamente no dossiê daquela leva (`batchReport`), acumulando `km`, litros queimados, saldo dos litros colocados e **média química consolidada** (`% Gasolina / % Álcool`, `STFT` médio) em todas as viagens quentes da leva.
+- **Tanque Virtual Calibrável por Riscos (Manual Civic 2007: 50 L / 20 Riscos)**:
+  - Campos de **Capacidade do Tanque (L)**, **Marcador do Painel (riscos)** e **Faixa de Abastecer (2 a 3 riscos finais ≈ 9,5 L)** no cadastro de veículos.
+  - Medidor visual de 20 riscos, cálculo de autonomia até chegar nos **2 a 3 riscos finais** (antes da reserva de ~8,5 L) e ferramenta **`🎯 Regular / Aferir Riscos ou Litros do Painel`** que corrige o volume e recalibra o fator de consumo (`fuelCalibFactor`).
+
+---
+
 ## [v1.4.0] - 2026-11-15
 ### Adicionado
 - **Isolamento Real Multi-Veículo**: Viagens, abastecimentos, médias, gráficos, revisão de óleo e odômetro filtrados automaticamente pelo veículo ativo (`vehicleId`).
