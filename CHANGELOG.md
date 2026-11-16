@@ -4,6 +4,15 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.7.0] - 2026-11-16
+### Adicionado
+- **Shadow — Guia Virtual de Economia em Tempo Real (`👻 Shadow: ON/OFF`)**:
+  - Seleciona automaticamente a sua viagem mais econômica já gravada para o mesmo ponto de origem/rota (`findBestShadowTrip`).
+  - Compara velocidade, RPM, aceleração (TPS/Cut-off) e `km/L` trecho a trecho por GPS (`<= 85 m`) e orienta por voz e banner no Cockpit/Mapa HUD (*"Vá um pouco mais devagar"*, *"Mantenha assim"*, *"Tire o pé para aproveitar o freio-motor"*).
+  - Pode ser ligado ou desligado em 1 toque no `🚗 Cockpit` ou no `🗺️ Mapa HUD` (preferência salva no celular).
+
+---
+
 ## [v1.6.0] - 2026-11-16
 ### Adicionado & Melhorado
 - **Mapa HUD com Rotação Automática no Sentido da Via (`🧭 Rotação: ON/OFF`)**:

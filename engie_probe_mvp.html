@@ -251,6 +251,9 @@
             <button id="btnToggleVoiceAlerts" type="button" class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold" title="Alertas por voz para temperatura crítica e alternador">
               🔊 Voz: ON
             </button>
+            <button id="btnToggleShadow" type="button" class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold" title="Guia virtual Sombra baseado nas suas melhores passagens">
+              👻 Shadow: ON
+            </button>
           </div>
           <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🤖 Rota Automática</span>
         </div>
@@ -286,6 +289,9 @@
         </div>
         <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
           <div id="cockpitEcoBar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 75%"></div>
+        </div>
+        <div id="cockpitShadowBanner" class="hidden text-[11px] text-purple-200 bg-purple-950/30 border border-purple-500/30 rounded-lg px-2.5 py-1.5">
+          👻 Shadow: aguardando trajeto conhecido para guiar sua economia...
         </div>
       </section>
 
@@ -942,6 +948,9 @@
       <button id="btnHudRotateMap" type="button" class="px-3 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/50 text-white text-xs font-bold shadow-lg backdrop-blur">
         🧭 Rotação: ON
       </button>
+      <button id="btnHudToggleShadow" type="button" class="px-3 py-2 rounded-xl bg-purple-600/90 hover:bg-purple-500 border border-purple-400/50 text-white text-xs font-bold shadow-lg backdrop-blur">
+        👻 Shadow: ON
+      </button>
     </div>
 
     <!-- HUD Flutuante no Canto -->
@@ -972,6 +981,9 @@
       </div>
       <div id="hudTripInfo" class="mono text-[11px] text-slate-300 text-center">
         Trajeto: 0.0 km • 0 min • R$ 0,00
+      </div>
+      <div id="hudShadowTip" class="hidden text-[11px] text-purple-200 bg-purple-950/60 border border-purple-500/40 rounded-lg px-2 py-1 text-center font-semibold">
+        👻 Shadow ativo
       </div>
     </div>
   </div>
@@ -1033,6 +1045,10 @@
       bgAudioEl: null,
       voiceAlerts: true,
       voiceCooldown: {},
+      shadowEnabled: localStorage.getItem('openobd_shadow_enabled') !== 'false',
+      shadowTrip: null,
+      shadowSearchDone: false,
+      shadowLastState: '',
       gpsOnlyRunning: false,
       gpsOnlyTimer: null,
       ecuOffCount: 0,
@@ -1145,6 +1161,20 @@
         vBtn.className = appState.voiceAlerts
           ? 'px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
           : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+      }
+      const sBtn = document.getElementById('btnToggleShadow');
+      if (sBtn) {
+        sBtn.textContent = appState.shadowEnabled ? '👻 Shadow: ON' : '👻 Shadow: OFF';
+        sBtn.className = appState.shadowEnabled
+          ? 'px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-semibold'
+          : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+      }
+      const hsBtn = document.getElementById('btnHudToggleShadow');
+      if (hsBtn) {
+        hsBtn.textContent = appState.shadowEnabled ? '👻 Shadow: ON' : '👻 Shadow: OFF';
+        hsBtn.className = appState.shadowEnabled
+          ? 'px-3 py-2 rounded-xl bg-purple-600/90 hover:bg-purple-500 border border-purple-400/50 text-white text-xs font-bold shadow-lg backdrop-blur'
+          : 'px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold shadow-lg backdrop-blur';
       }
     }
 
@@ -2736,7 +2766,99 @@
       if (flh) flh.textContent = '-- L/h';
       const gr = document.getElementById('mGear');
       if (gr) gr.textContent = 'N';
+      appState.shadowTrip = null;
+      appState.shadowSearchDone = false;
+      appState.shadowLastState = '';
+      document.getElementById('cockpitShadowBanner')?.classList.add('hidden');
+      document.getElementById('hudShadowTip')?.classList.add('hidden');
       showToast(`🏁 ${reason} e salva!`);
+    }
+
+    // ================= SHADOW: GUIA VIRTUAL DE ECONOMIA =================
+    function findBestShadowTrip() {
+      const cur = getCurrentSession();
+      const curLat = appState.gps?.lat ? +appState.gps.lat : null;
+      const curLon = appState.gps?.lon ? +appState.gps.lon : null;
+      if (!curLat || !curLon) return null;
+
+      let best = null;
+      let bestScore = -1;
+      for (const s of getVehicleSessions()) {
+        if (s.id === cur?.id || s.isGpsOnly || !s.rows || s.rows.length < 10) continue;
+        const pts = s.rows.filter((r) => r.lat && r.lon);
+        if (pts.length < 5) continue;
+        const sameOrigin = haversineMeters(curLat, curLon, +pts[0].lat, +pts[0].lon) <= 220;
+        const sameTag = cur?.routeTag && s.routeTag && cur.routeTag === s.routeTag;
+        if (!sameOrigin && !sameTag) continue;
+        const sum = summarizeSession(s);
+        if (sum.kml <= 0) continue;
+        const score = sum.kml * 10 + (sum.ecoScore || 70) * 0.2;
+        if (score > bestScore) {
+          bestScore = score;
+          best = { sess: s, sum, pts };
+        }
+      }
+      return best;
+    }
+
+    function evaluateShadowGuidance(m) {
+      const cBanner = document.getElementById('cockpitShadowBanner');
+      const hTip = document.getElementById('hudShadowTip');
+      if (!appState.shadowEnabled) {
+        cBanner?.classList.add('hidden');
+        hTip?.classList.add('hidden');
+        return;
+      }
+      if (!appState.gps?.lat || !appState.gps?.lon || (m.speed || 0) < 6) return;
+
+      if (!appState.shadowTrip && !appState.shadowSearchDone) {
+        appState.shadowTrip = findBestShadowTrip();
+        appState.shadowSearchDone = true;
+        if (appState.shadowTrip && cBanner) {
+          cBanner.classList.remove('hidden');
+          cBanner.textContent = `👻 Shadow ativo — comparando com sua melhor passagem (${appState.shadowTrip.sum.kml.toFixed(1)} km/L)`;
+        }
+      }
+      if (!appState.shadowTrip) return;
+
+      const curLat = +appState.gps.lat, curLon = +appState.gps.lon;
+      let nearest = null, minD = 85;
+      for (const pt of appState.shadowTrip.pts) {
+        const d = haversineMeters(curLat, curLon, +pt.lat, +pt.lon);
+        if (d < minD) { minD = d; nearest = pt; }
+      }
+      if (!nearest) return;
+
+      let state = 'KEEP';
+      let uiMsg = `👻 Mantenha assim! Ritmo da sua melhor passagem (${Math.round(nearest.speed)} km/h)`;
+      let voiceMsg = `Mantenha assim, ritmo ideal neste trecho.`;
+      let cooldown = 65000;
+
+      if (m.tps > 6 && (nearest.tps ?? 99) <= 2 && (nearest.speed || 0) > 20) {
+        state = 'CUTOFF';
+        uiMsg = `👻 Tire o pé agora para aproveitar o freio-motor como na sua melhor viagem.`;
+        voiceMsg = `Tire o pé do acelerador para aproveitar o freio motor.`;
+        cooldown = 25000;
+      } else if ((m.speed - (nearest.speed || 0)) >= 8 && ((m.fuelKml > 0 && nearest.fuelKml > 0 && m.fuelKml < nearest.fuelKml) || (m.rpm - (nearest.rpm || 0)) > 350)) {
+        state = 'SLOW';
+        const targetSpd = Math.max(15, Math.round(nearest.speed || 40));
+        uiMsg = `👻 Vá um pouco mais devagar: sua melhor passagem aqui foi a ${targetSpd} km/h.`;
+        voiceMsg = `Vá um pouco mais devagar. Seu melhor trecho aqui foi a ${targetSpd} quilômetros por hora.`;
+        cooldown = 25000;
+      }
+
+      if (cBanner) {
+        cBanner.classList.remove('hidden');
+        cBanner.textContent = uiMsg;
+      }
+      if (hTip) {
+        hTip.classList.remove('hidden');
+        hTip.textContent = uiMsg;
+      }
+      if (state !== appState.shadowLastState || state !== 'KEEP') {
+        appState.shadowLastState = state;
+        speakAlert(`shadow_${state}`, voiceMsg, cooldown);
+      }
     }
 
     function handleAutoTripTick(engNow, speedKmh) {
@@ -3701,6 +3823,7 @@
             else if (!document.getElementById('tab-map')?.classList.contains('hidden') && sess.rows.length % 3 === 0) {
               renderLeafletRoute();
             }
+            evaluateShadowGuidance(m);
             if (sess.rows.length % 6 === 0) {
               // Atualiza automaticamente a mistura (Gasolina % vs Álcool %) do tanque atual quando o motor está quente em Closed Loop
               if (m.coolant >= 75 && m.fuelSys === 'Closed Loop') {
@@ -3969,6 +4092,21 @@
         const b = document.getElementById('btnHudFollowCar');
         if (b) b.textContent = appState.hudFollowCar ? '🎯 Seguir: ON' : '🎯 Seguir: OFF';
       });
+      const toggleShadowMode = () => {
+        appState.shadowEnabled = !appState.shadowEnabled;
+        try { localStorage.setItem('openobd_shadow_enabled', String(appState.shadowEnabled)); } catch {}
+        updatePowerButtonsUi();
+        if (!appState.shadowEnabled) {
+          document.getElementById('cockpitShadowBanner')?.classList.add('hidden');
+          document.getElementById('hudShadowTip')?.classList.add('hidden');
+          showToast('👻 Shadow desativado.');
+        } else {
+          showToast('👻 Shadow ativado — comparando com suas melhores passagens.');
+        }
+      };
+      document.getElementById('btnToggleShadow')?.addEventListener('click', toggleShadowMode);
+      document.getElementById('btnHudToggleShadow')?.addEventListener('click', toggleShadowMode);
+
       document.getElementById('btnHudRotateMap')?.addEventListener('click', () => {
         appState.hudRotate = !appState.hudRotate;
         const b = document.getElementById('btnHudRotateMap');
@@ -4215,7 +4353,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.6.0',
+          version: '1.7.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,
