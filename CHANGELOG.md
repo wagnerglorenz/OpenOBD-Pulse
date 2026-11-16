@@ -4,6 +4,16 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.8.0] - 2026-11-16
+### Adicionado
+- **Busca Gratuita de Ficha & Sensores no Cadastro (`🌐 Buscar Ficha (Wi-Fi/3G)`)**:
+  - Consulta bases públicas 100% gratuitas sem API key (BrasilAPI FIPE + NHTSA vPIC) cruzadas com o Catálogo Técnico Brasileiro (`BR_CAR_SPECS_DB`) e o catálogo local já descoberto.
+  - Preenche automaticamente cilindrada, câmbio, capacidade do tanque, marcador do painel e perfil térmico do motor.
+- **Auto-Descoberta Real de Sensores OBD-II (`0100 / 0120 / 0140`) & Catálogo Local (`openobd_vehicle_catalog_v1`)**:
+  - Ao plugar o scanner em qualquer carro novo (ou tocar em `🔍 Mapear Sensores` em `🔬 ECU`), o app lê os bitmasks oficiais da central e salva a lista real de sensores no perfil do veículo, no catálogo local e no backup JSON para evolução contínua.
+
+---
+
 ## [v1.7.0] - 2026-11-16
 ### Adicionado
 - **Shadow — Guia Virtual de Economia em Tempo Real (`👻 Shadow: ON/OFF`)**:
