@@ -4,6 +4,14 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v2.0.0] - 2026-11-16
+### Adicionado & Melhorado
+- **Botão `🗺️ Mapa HUD` Mais Evidente no Cockpit**: Ícone ampliado e rótulo claro ao lado de `📍 Só GPS` para identificar o mapa ao vivo na hora.
+- **Nova Aba `ℹ️ Sobre` após `📊 Custos`**: Exibe a versão instalada do aplicativo, botão `🔄 Buscar Update`, resumo de privacidade local e o histórico das últimas melhorias do `CHANGELOG.md`.
+- **Medidor de Economia no HUD do Mapa**: Substitui a temperatura fixa da água no painel flutuante do mapa pelo indicador ao vivo de Economia (`%` / `⚡ Cut-Off`), mantendo o alerta visual e sonoro caso a água se aproxime da temperatura máxima do motor.
+
+---
+
 ## [v1.9.0] - 2026-11-16
 ### Adicionado
 - **Atualização Dentro do App sem Precisar Desinstalar (`🔄 Update`)**:

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'openobd-pulse-v10';
-const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'openobd-pulse-v11';
+const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './CHANGELOG.md'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

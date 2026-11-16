@@ -1,9 +1,9 @@
 {
-  "version": "1.9.0",
+  "version": "2.0.0",
   "minCompatibleVersion": "1.0.0",
   "schemaVersion": 2,
   "minCompatibleSchema": 1,
   "requiresReinstall": false,
   "downloadUrl": "https://wagnerglorenz.github.io/OpenOBD-Pulse/",
-  "notes": "Sistema de atualização dentro do app sem precisar desinstalar (com fallback de reinstalação quando houver quebra de compatibilidade)."
+  "notes": "Botão Mapa HUD ampliado, nova aba Sobre (versão + melhorias) e medidor de economia no HUD do mapa."
 }

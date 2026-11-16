@@ -274,8 +274,8 @@
             <button id="btnEndTripNow" class="hidden px-2.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">
               ⏹️ Encerrar
             </button>
-            <button id="btnOpenMapHudCockpit" class="px-2.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold" title="Abrir Mapa Ao Vivo com HUD">
-              🗺️
+            <button id="btnOpenMapHudCockpit" class="px-3 py-2 rounded-xl bg-cyan-600/25 hover:bg-cyan-600/40 text-cyan-200 border border-cyan-400/60 text-xs font-extrabold flex items-center gap-1" title="Abrir Mapa Ao Vivo com HUD">
+              <span class="text-base leading-none">🗺️</span><span>Mapa HUD</span>
             </button>
             <button id="btnQuickRefuel" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs">
               ⛽ Posto
@@ -984,6 +984,33 @@
         </details>
       </section>
     </div>
+
+    <!-- ================= ABA 6: SOBRE O APLICATIVO ================= -->
+    <div id="tab-about" class="tab-pane hidden space-y-3">
+      <section class="card p-4 space-y-3 border-cyan-500/30">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <img src="./icon.svg" class="w-11 h-11 rounded-xl border border-slate-700" alt="OpenOBD Pulse" />
+            <div>
+              <h2 class="text-base font-black text-white">OPEN<span class="text-cyan-400">OBD</span> <span class="text-emerald-400">PULSE</span></h2>
+              <p class="text-xs text-emerald-300 font-bold">Versão instalada: <span id="aboutAppVersion">v2.0.0</span></p>
+            </div>
+          </div>
+          <button id="btnCheckUpdateAbout" type="button" class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+            🔄 Buscar Update
+          </button>
+        </div>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] text-slate-300 space-y-1">
+          <div>🔒 <b>Privacidade 100% Local:</b> Suas viagens, mapas, abastecimentos e sensores ficam salvos apenas no seu celular (<code class="text-cyan-300">obd_trips_db</code>).</div>
+          <div>🔗 <b>Link Oficial:</b> <a href="https://wagnerglorenz.github.io/OpenOBD-Pulse/" target="_blank" class="text-cyan-300 underline">wagnerglorenz.github.io/OpenOBD-Pulse</a></div>
+        </div>
+      </section>
+
+      <section class="card p-3.5 space-y-2.5">
+        <h3 class="text-xs font-bold uppercase text-cyan-300">📋 Últimas Melhorias (Changelog)</h3>
+        <div id="aboutChangelogList" class="space-y-2 text-xs text-slate-300">Carregando histórico de melhorias...</div>
+      </section>
+    </div>
   </main>
 
   <!-- Modal Mapa Ao Vivo em Tela Cheia com HUD Flutuante -->
@@ -1030,9 +1057,12 @@
           <b id="hudAvgKml" class="text-emerald-300">-- km/L</b>
         </div>
         <div class="bg-slate-900/80 rounded-lg py-1 px-1.5">
-          <span class="text-[9px] text-slate-400 block">ÁGUA</span>
-          <b id="hudCoolant" class="text-orange-300">--°C</b>
+          <span class="text-[9px] text-slate-400 block">ECONOMIA</span>
+          <b id="hudEcoScore" class="text-emerald-300">--%</b>
         </div>
+      </div>
+      <div id="hudThermalAlert" class="hidden text-[11px] text-rose-200 bg-rose-950/80 border border-rose-500 rounded-lg px-2 py-1 text-center font-bold animate-pulse">
+        🔥 Alerta de temperatura elevada!
       </div>
       <div id="hudTripInfo" class="mono text-[11px] text-slate-300 text-center">
         Trajeto: 0.0 km • 0 min • R$ 0,00
@@ -1043,23 +1073,26 @@
     </div>
   </div>
 
-  <!-- Barra de Navegação Fixa no Rodapé (5 Abas) -->
+  <!-- Barra de Navegação Fixa no Rodapé (6 Abas) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800">
-    <div class="max-w-5xl mx-auto grid grid-cols-5 text-center">
-      <button data-tab="tab-cockpit" class="nav-tab-btn py-2.5 text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400">
+    <div class="max-w-5xl mx-auto grid grid-cols-6 text-center">
+      <button data-tab="tab-cockpit" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400">
         🚗 Cockpit
       </button>
-      <button data-tab="tab-electric" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+      <button data-tab="tab-electric" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
         ⚡ Elétrica
       </button>
-      <button data-tab="tab-refuel" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+      <button data-tab="tab-refuel" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
         ⛽ Posto
       </button>
-      <button data-tab="tab-map" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+      <button data-tab="tab-map" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
         🗺️ Rotas
       </button>
-      <button data-tab="tab-history" class="nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+      <button data-tab="tab-history" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
         📊 Custos
+      </button>
+      <button data-tab="tab-about" class="nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent">
+        ℹ️ Sobre
       </button>
     </div>
   </nav>
@@ -2743,11 +2776,12 @@
       document.querySelectorAll('.tab-pane').forEach((p) => p.classList.add('hidden'));
       document.getElementById(targetId)?.classList.remove('hidden');
       document.querySelectorAll('.nav-tab-btn').forEach((b) => {
-        b.className = 'nav-tab-btn py-2.5 text-[11px] font-semibold text-slate-400 border-t-2 border-transparent';
+        b.className = 'nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-semibold text-slate-400 border-t-2 border-transparent';
       });
       const activeBtn = document.querySelector(`.nav-tab-btn[data-tab="${targetId}"]`);
-      if (activeBtn) activeBtn.className = 'nav-tab-btn py-2.5 text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400';
+      if (activeBtn) activeBtn.className = 'nav-tab-btn py-2.5 text-[10px] sm:text-[11px] font-bold text-cyan-400 border-t-2 border-cyan-400';
       if (targetId === 'tab-map') renderLeafletRoute();
+      if (targetId === 'tab-about' && typeof renderAboutChangelog === 'function') renderAboutChangelog();
     }
 
     // ================= ELÉTRICA: BATERIA, PARTIDA & ALTERNADOR =================
@@ -3443,10 +3477,21 @@
       setTxt('hudKml', m.fuelKml > 0 ? m.fuelKml.toFixed(1) : '--');
       setTxt('hudGearRpm', `${m.gear} • ${m.rpm || '--'}`);
       setTxt('hudAvgKml', sum.kml > 0 ? `${sum.kml.toFixed(1)} km/L` : '-- km/L');
-      const hc = document.getElementById('hudCoolant');
-      if (hc) {
-        hc.textContent = `${m.coolant || '--'}°C`;
-        hc.className = m.coolant >= tp.warnNearMax ? 'text-rose-400 animate-pulse' : m.coolant >= tp.minIdeal ? 'text-emerald-300' : 'text-sky-300';
+      const he = document.getElementById('hudEcoScore');
+      if (he) {
+        const isCutOff = m.speed > 20 && m.tps <= 1.5;
+        const ecoPct = isCutOff ? 100 : Math.max(15, Math.min(100, Math.round(95 - (m.tps * 0.7) - Math.max(0, m.rpm - 2400) / 40)));
+        he.textContent = isCutOff ? '⚡ Cut-Off' : `${ecoPct}%`;
+        he.className = isCutOff ? 'text-cyan-300' : ecoPct >= 70 ? 'text-emerald-300' : ecoPct >= 45 ? 'text-amber-300' : 'text-rose-400';
+      }
+      const hAlert = document.getElementById('hudThermalAlert');
+      if (hAlert) {
+        if (m.coolant >= tp.warnNearMax) {
+          hAlert.classList.remove('hidden');
+          hAlert.textContent = `🔥 Alerta: Água em ${m.coolant}°C (limite ${tp.criticalMax}°C)!`;
+        } else {
+          hAlert.classList.add('hidden');
+        }
       }
       setTxt('hudTripInfo', `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)}`);
     }
@@ -4210,9 +4255,54 @@
       );
     }
 
-    const APP_VERSION = '1.9.0';
+    const APP_VERSION = '2.0.0';
     const LOCAL_SCHEMA_VERSION = 2;
     let swRegistrationRef = null;
+
+    async function renderAboutChangelog() {
+      const verEl = document.getElementById('aboutAppVersion');
+      if (verEl) verEl.textContent = `v${APP_VERSION}`;
+      const badgeEl = document.getElementById('appVersionBadge');
+      if (badgeEl) badgeEl.textContent = `v${APP_VERSION}`;
+      const box = document.getElementById('aboutChangelogList');
+      if (!box) return;
+
+      const fallback = [
+        { ver: 'v2.0.0', items: ['Botão do Mapa HUD ampliado ao lado de Só GPS', 'Nova aba Sobre com versão e melhorias', 'Medidor de Economia no lugar da Água no HUD do mapa (mantendo alerta térmico)'] },
+        { ver: 'v1.9.0', items: ['Atualização dentro do app via botão Update sem desinstalar', 'Aviso automático para reinstalação quando não for retrocompatível'] },
+        { ver: 'v1.8.0', items: ['Busca gratuita FIPE/NHTSA no cadastro de carros', 'Auto-descoberta real de sensores OBD-II (0100/0120/0140) salva no catálogo local'] },
+        { ver: 'v1.7.0', items: ['Shadow: guia virtual de economia baseado nas suas melhores passagens (com botão liga/desliga)'] },
+        { ver: 'v1.6.0', items: ['Rotação automática do Mapa HUD no sentido da via', 'Perfis térmicos multi-veículo com alerta sonoro apenas perto da máxima'] },
+        { ver: 'v1.5.0', items: ['Levas de combustível entre abastecimentos + tanque 50L / 20 riscos calibrável'] }
+      ];
+
+      try {
+        const res = await fetch(`./CHANGELOG.md?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const md = await res.text();
+          const sections = md.split(/^##\s+/m).slice(1, 7);
+          if (sections.length) {
+            box.innerHTML = sections.map((sec) => {
+              const lines = sec.trim().split('\n');
+              const title = lines[0].replace(/[\[\]]/g, '');
+              const bullets = lines.slice(1).filter((l) => l.trim().startsWith('- ')).slice(0, 5);
+              return `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-1">
+                  <div class="font-bold text-cyan-300">${title}</div>
+                  ${bullets.map((b) => `<div class="text-[11px] text-slate-300">• ${b.replace(/^-\s*/, '').replace(/\*\*/g, '')}</div>`).join('')}
+                </div>`;
+            }).join('');
+            return;
+          }
+        }
+      } catch {}
+
+      box.innerHTML = fallback.map((f) => `
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-1">
+          <div class="font-bold text-cyan-300">${f.ver}</div>
+          ${f.items.map((i) => `<div class="text-[11px] text-slate-300">• ${i}</div>`).join('')}
+        </div>`).join('');
+    }
 
     function compareSemver(a, b) {
       const pa = String(a || '0.0.0').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
@@ -4685,7 +4775,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.9.0',
+          version: '2.0.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,
@@ -4810,6 +4900,8 @@
       }
       document.getElementById('btnApplyAppUpdate')?.addEventListener('click', applyAppUpdate);
       document.getElementById('btnCheckUpdateManual')?.addEventListener('click', () => checkForAppUpdates(true));
+      document.getElementById('btnCheckUpdateAbout')?.addEventListener('click', () => checkForAppUpdates(true));
+      renderAboutChangelog();
       document.getElementById('btnCopyBreakingLink')?.addEventListener('click', () => {
         const url = document.getElementById('breakingUpdateLink')?.textContent || 'https://wagnerglorenz.github.io/OpenOBD-Pulse/';
         if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(() => showToast('📋 Link copiado!'));
