@@ -47,6 +47,36 @@
     </div>
   </header>
 
+  <!-- Banner de Atualização Retrocompatível (1 Toque) -->
+  <div id="updateAppBanner" class="hidden bg-cyan-950/95 border-b border-cyan-500/50 px-3 py-2 text-xs text-cyan-100">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div id="updateAppText" class="font-semibold">🚀 Nova atualização disponível! Seus dados locais serão preservados.</div>
+      <div class="flex items-center gap-2">
+        <button id="btnApplyAppUpdate" type="button" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs">
+          🔄 Update
+        </button>
+        <button type="button" onclick="document.getElementById('updateAppBanner').classList.add('hidden')" class="text-slate-400 hover:text-white px-1.5 font-bold">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Atualização NÃO Retrocompatível (Desinstalar e Reinstalar) -->
+  <div id="breakingUpdateModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="card max-w-md w-full p-5 space-y-3 border-rose-500/60 shadow-2xl">
+      <div class="text-base font-black text-rose-300">⚠️ Reinstalação Necessária</div>
+      <p id="breakingUpdateMsg" class="text-xs text-slate-200 leading-relaxed">
+        A nova versão não é retrocompatível com a versão instalada no seu celular. Recomendamos exportar seu backup em <b>📊 Custos</b>, <b>desinstalar este app</b> e instalar novamente pelo link oficial abaixo:
+      </p>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px] mono text-cyan-300 break-all">
+        <a id="breakingUpdateLink" href="https://wagnerglorenz.github.io/OpenOBD-Pulse/" target="_blank" class="underline">https://wagnerglorenz.github.io/OpenOBD-Pulse/</a>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button id="btnCopyBreakingLink" type="button" class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">📋 Copiar Link</button>
+        <button type="button" onclick="document.getElementById('breakingUpdateModal').classList.add('hidden')" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toastBanner" class="hidden fixed bottom-20 right-4 left-4 sm:left-auto sm:w-96 z-50 bg-slate-800 border border-cyan-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
     <span id="toastMessage" class="text-xs sm:text-sm font-medium">Pronto.</span>
     <button id="closeToastBtn" class="text-xs font-bold px-2 py-1 bg-slate-700 rounded">OK</button>
@@ -943,7 +973,10 @@
         <details class="bg-slate-950 border border-slate-800 rounded-xl p-2.5">
           <summary class="cursor-pointer text-[11px] font-semibold text-slate-400">🛠️ Avançado: Log técnico serial &amp; reset de fábrica</summary>
           <div id="terminalOutput" class="mt-2 h-32 overflow-y-auto mono text-[10px] space-y-1 text-slate-300"></div>
-          <div class="mt-2 pt-2 border-t border-slate-800 flex justify-end">
+          <div class="mt-2 pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <button id="btnCheckUpdateManual" type="button" class="px-2.5 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-[11px] font-semibold">
+              🔄 Verificar Atualização (<span id="appVersionBadge">v1.9.0</span>)
+            </button>
             <button id="btnResetVehicles" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 text-[11px] font-semibold">
               🔄 Resetar veículos e configuração inicial
             </button>
@@ -4177,7 +4210,91 @@
       );
     }
 
+    const APP_VERSION = '1.9.0';
+    const LOCAL_SCHEMA_VERSION = 2;
+    let swRegistrationRef = null;
+
+    function compareSemver(a, b) {
+      const pa = String(a || '0.0.0').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+      const pb = String(b || '0.0.0').replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0);
+      for (let i = 0; i < 3; i++) {
+        if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+        if ((pa[i] || 0) < (pb[i] || 0)) return -1;
+      }
+      return 0;
+    }
+
+    function runDataMigrations() {
+      try {
+        const curSchema = parseInt(localStorage.getItem('openobd_schema_version') || '1', 10);
+        if (curSchema < LOCAL_SCHEMA_VERSION) {
+          // Migração retrocompatível preservando todas as viagens, abastecimentos e veículos existentes
+          localStorage.setItem('openobd_schema_version', String(LOCAL_SCHEMA_VERSION));
+        }
+      } catch {}
+    }
+
+    async function checkForAppUpdates(manual = false) {
+      if (!navigator.onLine) {
+        if (manual) showToast('Sem internet — conecte ao Wi-Fi ou 3G/4G para verificar atualizações.');
+        return;
+      }
+      try {
+        if (swRegistrationRef) await swRegistrationRef.update().catch(() => {});
+        const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const remote = await res.json();
+        const isNewer = compareSemver(remote.version, APP_VERSION) > 0;
+        if (!isNewer) {
+          if (manual) showToast(`✅ Você já está na versão mais recente (v${APP_VERSION}).`);
+          return;
+        }
+        const incompatible = Boolean(
+          remote.requiresReinstall ||
+          compareSemver(APP_VERSION, remote.minCompatibleVersion || '0.0.0') < 0 ||
+          LOCAL_SCHEMA_VERSION < (remote.minCompatibleSchema || 1)
+        );
+        if (incompatible) {
+          const url = remote.downloadUrl || 'https://wagnerglorenz.github.io/OpenOBD-Pulse/';
+          const linkEl = document.getElementById('breakingUpdateLink');
+          if (linkEl) { linkEl.href = url; linkEl.textContent = url; }
+          const msgEl = document.getElementById('breakingUpdateMsg');
+          if (msgEl) {
+            msgEl.innerHTML = `A nova versão <b>v${remote.version}</b> não é retrocompatível com a versão instalada (v${APP_VERSION}). Recomendamos exportar seu backup em <b>📊 Custos</b>, <b>desinstalar este app do celular</b> e baixar novamente pelo link oficial abaixo:`;
+          }
+          document.getElementById('breakingUpdateModal')?.classList.remove('hidden');
+        } else {
+          const txtEl = document.getElementById('updateAppText');
+          if (txtEl) {
+            txtEl.textContent = `🚀 Nova versão v${remote.version} disponível! ${remote.notes || 'Seus dados locais serão preservados.'}`;
+          }
+          document.getElementById('updateAppBanner')?.classList.remove('hidden');
+          if (manual) showToast(`🚀 Atualização v${remote.version} pronta! Toque em "Update" no topo.`);
+        }
+      } catch {
+        if (manual) showToast('Não foi possível verificar atualizações agora.');
+      }
+    }
+
+    async function applyAppUpdate() {
+      showToast('⏳ Atualizando o OpenOBD Pulse...');
+      try {
+        if (swRegistrationRef) {
+          await swRegistrationRef.update().catch(() => {});
+          if (swRegistrationRef.waiting) {
+            swRegistrationRef.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch {}
+      setTimeout(() => window.location.reload(), 350);
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
+      runDataMigrations();
       loadSessions();
       loadKnownPlaces();
       updatePowerButtonsUi();
@@ -4568,7 +4685,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.8.0',
+          version: '1.9.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,
@@ -4678,8 +4795,26 @@
       });
 
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          swRegistrationRef = reg;
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', () => {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                document.getElementById('updateAppBanner')?.classList.remove('hidden');
+              }
+            });
+          });
+        }).catch(() => {});
       }
+      document.getElementById('btnApplyAppUpdate')?.addEventListener('click', applyAppUpdate);
+      document.getElementById('btnCheckUpdateManual')?.addEventListener('click', () => checkForAppUpdates(true));
+      document.getElementById('btnCopyBreakingLink')?.addEventListener('click', () => {
+        const url = document.getElementById('breakingUpdateLink')?.textContent || 'https://wagnerglorenz.github.io/OpenOBD-Pulse/';
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(() => showToast('📋 Link copiado!'));
+      });
+      setTimeout(() => checkForAppUpdates(false), 3000);
       let deferredInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();

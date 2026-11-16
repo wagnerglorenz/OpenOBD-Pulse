@@ -4,6 +4,15 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.9.0] - 2026-11-16
+### Adicionado
+- **Atualização Dentro do App sem Precisar Desinstalar (`🔄 Update`)**:
+  - Verificação automática (e manual em `🛠️ Avançado`) via `version.json` (`no-store`) + eventos do Service Worker (`sw.js` com `SKIP_WAITING`).
+  - Quando sai uma versão retrocompatível, exibe o banner no topo com botão **`🔄 Update`** que limpa o cache antigo, aplica a nova versão e preserva 100% dos dados em `IndexedDB` e `localStorage` (`runDataMigrations`).
+  - Quando uma versão futura não for retrocompatível (`requiresReinstall` / `minCompatibleVersion`), exibe aviso explícito orientando a desinstalar e baixar novamente com link clicável e botão de copiar.
+
+---
+
 ## [v1.8.0] - 2026-11-16
 ### Adicionado
 - **Busca Gratuita de Ficha & Sensores no Cadastro (`🌐 Buscar Ficha (Wi-Fi/3G)`)**:
