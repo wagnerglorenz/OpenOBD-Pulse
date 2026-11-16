@@ -189,6 +189,9 @@
             <button id="btnToggleLive" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold">
               ▶ Ao Vivo
             </button>
+            <button id="btnGpsOnlyMode" class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-bold" title="Gravar trajeto e mapa HUD sem scanner">
+              📍 Só GPS
+            </button>
             <button id="btnEndTripNow" class="hidden px-2.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold">
               ⏹️ Encerrar
             </button>
@@ -208,6 +211,9 @@
             </button>
             <button id="btnToggleBgAudio" type="button" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold" title="Usa áudio silencioso para tentar manter gravação com tela apagada">
               🔋 2º Plano: OFF
+            </button>
+            <button id="btnToggleVoiceAlerts" type="button" class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold" title="Alertas por voz para temperatura crítica e alternador">
+              🔊 Voz: ON
             </button>
           </div>
           <span id="routeStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">🤖 Rota Automática</span>
@@ -724,15 +730,22 @@
 
         <div id="periodSummaryGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs mono"></div>
         <div id="costsBarChart" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5"></div>
+        <div id="costsZoneBreakdown" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5"></div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
           <div class="flex flex-wrap items-center gap-2">
             <button id="btnAnalyzeAll" class="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs">📈 Analisar Todas</button>
             <button id="btnCopyAnalysis" class="px-3 py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs">📋 Copiar Análise</button>
           </div>
-          <button id="btnShareDrive" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs">
-            ☁️ Salvar no Google Drive / Compartilhar
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="importBackupFileInput" type="file" accept=".json,application/json" class="hidden" />
+            <button id="btnImportBackup" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold text-xs">
+              📥 Restaurar Backup
+            </button>
+            <button id="btnShareDrive" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs">
+              ☁️ Salvar no Google Drive / Compartilhar
+            </button>
+          </div>
         </div>
 
         <div id="analysisOutput" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs space-y-2 text-slate-300">
@@ -857,6 +870,10 @@
       keepScreenOn: true,
       bgAudioEnabled: false,
       bgAudioEl: null,
+      voiceAlerts: true,
+      voiceCooldown: {},
+      gpsOnlyRunning: false,
+      gpsOnlyTimer: null,
       ecuOffCount: 0,
       gps: null,
       gpsWatchId: null,
@@ -902,7 +919,7 @@
         lambdaReal: 0, wbMa: 0, afr: 0, lambdaCmd: 0, lambdaDiff: 0,
         stft: 0, fuelSys: '--', timing: 0, load: 0, absLoad: 0,
         map: 0, vePct: 0, tps: 0, pedal: 0, coolant: 0, iat: 0,
-        ecuVolt: 0, o2v: 0, baro: 0, egr: 0, evap: 0, ecuDist0131: null
+        ecuVolt: 0, o2v: 0, baro: 0, egr: 0, evap: 0, ecuDist0131: null, tankPct: null
       }
     };
 
@@ -958,6 +975,26 @@
           ? 'px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
           : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
       }
+      const vBtn = document.getElementById('btnToggleVoiceAlerts');
+      if (vBtn) {
+        vBtn.textContent = appState.voiceAlerts ? '🔊 Voz: ON' : '🔇 Voz: OFF';
+        vBtn.className = appState.voiceAlerts
+          ? 'px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+          : 'px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+      }
+    }
+
+    function speakAlert(key, text, cooldownMs = 90000) {
+      if (!appState.voiceAlerts || !('speechSynthesis' in window)) return;
+      const now = Date.now();
+      if (appState.voiceCooldown[key] && (now - appState.voiceCooldown[key]) < cooldownMs) return;
+      appState.voiceCooldown[key] = now;
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'pt-BR';
+        u.rate = 1.05;
+        window.speechSynthesis.speak(u);
+      } catch {}
     }
 
     function startSilentBgAudio() {
@@ -1033,6 +1070,51 @@
         codes.push(`${sysMap[(a >> 6) & 3]}${(a >> 4) & 3}${(a & 15).toString(16).toUpperCase()}${(b >> 4).toString(16).toUpperCase()}${(b & 15).toString(16).toUpperCase()}`);
       }
       return codes;
+    }
+
+    const DTC_PT_MAP = {
+      P0100: 'Falha no circuito do sensor MAF',
+      P0101: 'Sensor MAF fora da faixa/desempenho',
+      P0106: 'Sensor MAP fora da faixa/desempenho',
+      P0107: 'Tensão baixa no sensor MAP',
+      P0110: 'Falha no sensor de temperatura do ar (IAT)',
+      P0113: 'Sinal alto no sensor IAT (ar admitido)',
+      P0115: 'Falha no sensor de temperatura da água (ECT)',
+      P0118: 'Sinal alto no sensor de temperatura da água',
+      P0120: 'Falha no sensor de posição da borboleta (TPS)',
+      P0128: 'Termostática travada aberta (motor não aquece)',
+      P0130: 'Falha na sonda lambda B1S1 (pré-catalisador)',
+      P0133: 'Resposta lenta da sonda lambda B1S1',
+      P0134: 'Sonda lambda B1S1 sem atividade',
+      P0135: 'Falha no aquecedor da sonda lambda B1S1',
+      P0136: 'Falha na sonda lambda B1S2 (pós-catalisador)',
+      P0141: 'Falha no aquecedor da sonda lambda B1S2',
+      P0171: 'Mistura muito pobre (excesso de ar ou falta de combustível)',
+      P0172: 'Mistura muito rica (excesso de combustível)',
+      P0300: 'Falha de ignição aleatória/múltiplos cilindros',
+      P0301: 'Falha de ignição no cilindro 1',
+      P0302: 'Falha de ignição no cilindro 2',
+      P0303: 'Falha de ignição no cilindro 3',
+      P0304: 'Falha de ignição no cilindro 4',
+      P0325: 'Falha no sensor de detonação (Knock)',
+      P0335: 'Falha no sensor de rotação (CKP)',
+      P0340: 'Falha no sensor de fase (CMP)',
+      P0401: 'Fluxo insuficiente na válvula EGR',
+      P0420: 'Eficiência do catalisador abaixo do esperado',
+      P0441: 'Fluxo incorreto na purga EVAP',
+      P0442: 'Pequeno vazamento no sistema EVAP (tampa/mangueira)',
+      P0455: 'Grande vazamento no sistema EVAP',
+      P0500: 'Falha no sensor de velocidade (VSS)',
+      P0505: 'Falha no controle de marcha lenta (IAC)',
+      P0562: 'Tensão baixa no sistema elétrico',
+      P0563: 'Tensão alta no sistema elétrico',
+      P0606: 'Falha interna do módulo ECU/PCM',
+      P0700: 'Solicitação de falha no módulo de transmissão (câmbio)'
+    };
+
+    function translateDtc(code) {
+      const desc = DTC_PT_MAP[String(code || '').toUpperCase()];
+      return desc ? `${code} (${desc})` : code;
     }
 
     // Cálculo da marcha baseado na transmissão cadastrada para o veículo ativo
@@ -1273,10 +1355,27 @@
       }).join('');
     }
 
+    function getActiveVehicleId() {
+      return appState.activeVehicleId || appState.vehicles[0]?.id || 'default';
+    }
+
+    function getVehicleSessions() {
+      const vid = getActiveVehicleId();
+      return (appState.sessions || []).filter((s) => !s.vehicleId || s.vehicleId === vid);
+    }
+
+    function getVehicleRefuels() {
+      const vid = getActiveVehicleId();
+      return (appState.refuels || []).filter((r) => !r.vehicleId || r.vehicleId === vid);
+    }
+
     window.switchToVehicle = (id) => {
       appState.activeVehicleId = id;
       saveVehicles();
       renderVehiclesListContainer();
+      if (typeof renderAllSessionViews === 'function') renderAllSessionViews();
+      if (typeof renderRefuels === 'function') renderRefuels();
+      if (typeof renderKnownPlaces === 'function') renderKnownPlaces();
       showToast('Veículo ativo alterado!');
     };
 
@@ -1396,7 +1495,7 @@
 
     // Retorna o odômetro estimado atual combinando ECU (0131 + offset) ou Último Abastecimento + Viagens
     function getEstimatedCurrentOdometer() {
-      const lastRef = appState.refuels[0] || null;
+      const lastRef = getVehicleRefuels()[0] || null;
       const sinceLast = calcSessionsSince(lastRef?.ts || null);
       let estFromRefuel = lastRef?.odoKm ? Math.round(lastRef.odoKm + sinceLast.km) : null;
       let estFromEcu = (appState.lastEcu0131Km !== null && appState.odoOffset !== null)
@@ -1833,7 +1932,7 @@
         return showToast('Informe quantos litros foram colocados no tanque (ou o valor total R$).');
       }
 
-      const prev = appState.refuels[0] || null;
+      const prev = getVehicleRefuels()[0] || null;
       if (prev && odoKm < prev.odoKm) {
         return showToast(`O odômetro atual (${odoKm} km) não pode ser menor que o último posto (${prev.odoKm} km).`);
       }
@@ -1881,6 +1980,7 @@
 
       const rec = {
         id: 'ref_' + now.getTime(),
+        vehicleId: getActiveVehicleId(),
         ts: now.toISOString(),
         label: now.toLocaleString('pt-BR'),
         stationName,
@@ -1921,6 +2021,7 @@
       const id = 'sess_' + now.getTime();
       const sess = {
         id,
+        vehicleId: getActiveVehicleId(),
         startedAt: now.toISOString(),
         endedAt: now.toISOString(),
         label: now.toLocaleString('pt-BR'),
@@ -2264,10 +2365,10 @@
 
       const calc = (minTs) => {
         let km = 0, lit = 0, idleLit = 0, stops = 0, count = 0;
-        for (const s of appState.sessions) {
+        for (const s of getVehicleSessions()) {
           if (new Date(s.startedAt).getTime() >= minTs && s.rows?.length > 2) {
             const sum = summarizeSession(s);
-            km += sum.distKm; lit += sum.liters; idleLit += sum.idleLiters; stops += sum.stops; count++;
+            km += sum.distKm; if (!s.isGpsOnly) { lit += sum.liters; idleLit += sum.idleLiters; } stops += sum.stops; count++;
           }
         }
         return { km, lit, cost: lit * price, idleCost: idleLit * price, stops, kml: lit > 0.01 ? km / lit : 0, count };
@@ -2287,13 +2388,55 @@
         </div>
       `).join('');
       renderCostsBarChart(price);
+      renderCostsZoneBreakdown(price);
       renderMaintenanceCard();
+    }
+
+    function renderCostsZoneBreakdown(price) {
+      const box = document.getElementById('costsZoneBreakdown');
+      if (!box) return;
+      let idleL = 0, urbanL = 0, hwyL = 0;
+      for (const s of getVehicleSessions()) {
+        if (s.isGpsOnly || !s.rows?.length) continue;
+        for (let i = 0; i < s.rows.length; i++) {
+          const r = s.rows[i];
+          const prev = i > 0 ? s.rows[i - 1] : null;
+          let dt = prev ? (new Date(r.ts) - new Date(prev.ts)) / 1000 : 1;
+          if (dt <= 0 || dt > 15) dt = 1;
+          const lit = (r.fuelLh || 0) * (dt / 3600);
+          const spd = r.speed || 0;
+          if (spd <= 2) idleL += lit;
+          else if (spd <= 55) urbanL += lit;
+          else hwyL += lit;
+        }
+      }
+      const tot = idleL + urbanL + hwyL;
+      if (tot < 0.01) {
+        box.innerHTML = '<div class="text-[11px] text-slate-400">Raio-X (Parado vs Urbano vs Rodovia) aparecerá após gravar viagens com scanner.</div>';
+        return;
+      }
+      const pIdle = Math.round((idleL * 100) / tot);
+      const pUrb = Math.round((urbanL * 100) / tot);
+      const pHwy = Math.max(0, 100 - pIdle - pUrb);
+      box.innerHTML = `
+        <div class="text-[11px] font-bold text-slate-300 mb-1.5">🔍 Raio-X: Onde Você Gasta Mais</div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex mb-2">
+          <div class="bg-rose-500 h-full" style="width:${pIdle}%"></div>
+          <div class="bg-amber-400 h-full" style="width:${pUrb}%"></div>
+          <div class="bg-emerald-500 h-full" style="width:${pHwy}%"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 text-[10px] mono">
+          <div class="text-rose-300">🔴 Parado: ${pIdle}% (R$ ${(idleL * price).toFixed(2)})</div>
+          <div class="text-amber-300 text-center">🟡 Urbano: ${pUrb}% (R$ ${(urbanL * price).toFixed(2)})</div>
+          <div class="text-emerald-300 text-right">🟢 Rodovia: ${pHwy}% (R$ ${(hwyL * price).toFixed(2)})</div>
+        </div>
+      `;
     }
 
     function renderCostsBarChart(price) {
       const box = document.getElementById('costsBarChart');
       if (!box) return;
-      const recent = appState.sessions.filter((s) => s.rows?.length > 2).slice(0, 7).reverse();
+      const recent = getVehicleSessions().filter((s) => s.rows?.length > 2).slice(0, 7).reverse();
       if (!recent.length) {
         box.innerHTML = '<div class="text-[11px] text-slate-400">O gráfico comparativo das últimas viagens aparecerá aqui assim que você gravar trajetos.</div>';
         return;
@@ -2329,7 +2472,8 @@
       const det = document.getElementById('maintOilDetails');
       if (!bar || !det) return;
       const odo = getEstimatedCurrentOdometer();
-      const lastOilKm = parseFloat(localStorage.getItem('openobd_oil_last_km') || '');
+      const oilKey = `openobd_oil_last_km_${getActiveVehicleId()}`;
+      const lastOilKm = parseFloat(localStorage.getItem(oilKey) || localStorage.getItem('openobd_oil_last_km') || '');
       if (!lastOilKm || isNaN(lastOilKm)) {
         bar.style.width = '0%';
         det.textContent = odo
@@ -2357,7 +2501,7 @@
       if (!box) return;
       const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
       const groups = {};
-      for (const s of appState.sessions) {
+      for (const s of getVehicleSessions()) {
         const tag = (s.routeTag || '').trim();
         if (!tag || !s.rows?.length) continue;
         const sum = summarizeSession(s);
@@ -2387,7 +2531,7 @@
     }
 
     function populateCompareSelects() {
-      const valid = appState.sessions.filter((s) => s.rows?.length > 0);
+      const valid = getVehicleSessions().filter((s) => s.rows?.length > 0);
       const opts = valid.map((s) => `<option value="${s.id}">${s.routeTag ? '[' + s.routeTag + '] ' : ''}${s.label} (${s.rows.length} pts)</option>`).join('');
       for (const id of ['cmpSelectA', 'cmpSelectB', 'mapSessionSelect']) {
         const el = document.getElementById(id);
@@ -2524,12 +2668,13 @@
     function renderSessions() {
       const box = document.getElementById('sessionsList');
       if (!box) return;
-      if (!appState.sessions.length) {
-        box.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhuma viagem gravada ainda.</div>';
+      const vehSessions = getVehicleSessions();
+      if (!vehSessions.length) {
+        box.innerHTML = '<div class="text-slate-400 bg-slate-950 border border-slate-800 rounded-xl p-3">Nenhuma viagem gravada para este veículo ainda.</div>';
         return;
       }
       const price = parseFloat(document.getElementById('fuelPriceInput')?.value || '6.15') || 6.15;
-      box.innerHTML = appState.sessions.map((s) => {
+      box.innerHTML = vehSessions.map((s) => {
         const isCur = s.id === appState.currentSessionId;
         const sum = summarizeSession(s);
         const ecoColor = sum.ecoScore >= 80 ? 'text-emerald-300 bg-emerald-500/15' : sum.ecoScore >= 60 ? 'text-amber-300 bg-amber-500/15' : 'text-rose-300 bg-rose-500/15';
@@ -2959,6 +3104,7 @@
           const rEgr = extractHexBytes(await sendObdCommand('012C 1', 1800), ['41', '2C']);
           const rEvap = extractHexBytes(await sendObdCommand('012E 1', 1800), ['41', '2E']);
           const rDist31 = extractHexBytes(await sendObdCommand('0131 1', 1800), ['41', '31']);
+          const rTank = extractHexBytes(await sendObdCommand('012F 1', 1500), ['41', '2F']);
 
           if (rCool?.length >= 1) m.coolant = rCool[0] - 40;
           if (rIat?.length >= 1) m.iat = rIat[0] - 40;
@@ -2980,6 +3126,10 @@
             appState.lastEcu0131Km = km31;
             localStorage.setItem('civic2007_last_0131_km', String(km31));
           }
+          if (rTank?.length >= 1) m.tankPct = Math.round((rTank[0] * 100) / 255);
+          if (m.coolant >= 102) speakAlert('high_coolant', `Atenção! Temperatura da água elevada: ${m.coolant} graus.`);
+          if (m.rpm > 300 && m.ecuVolt > 5 && m.ecuVolt < 13.0) speakAlert('low_volt', `Alerta elétrico! Tensão do alternador baixa: ${m.ecuVolt} volts.`);
+          if (m.rpm > 300 && m.ecuVolt > 14.9) speakAlert('high_volt', `Alerta elétrico! Sobretensão no alternador: ${m.ecuVolt} volts.`);
         }
 
         m.vePct = calcVolumetricEfficiency(m.rpm, m.map, m.iat, m.maf);
@@ -3065,6 +3215,7 @@
             if (m.coolant > sess.maxCoolant) sess.maxCoolant = m.coolant;
             if (sess.secTo80 === null && m.coolant >= 80) {
               sess.secTo80 = Math.round((new Date(sess.endedAt) - new Date(sess.startedAt)) / 1000);
+              speakAlert('warm_80', 'Motor aquecido a 80 graus.', 600000);
             }
             document.getElementById('mWarmupTime').textContent = sess.secTo80 !== null ? `${sess.secTo80}s` : 'Aquecendo...';
             sess.rows.push({
@@ -3077,7 +3228,8 @@
             document.getElementById('mStopsSummary').textContent = `${sum.stops} paradas • R$ ${(sum.idleLiters * price).toFixed(2)}`;
             const liveStrip = document.getElementById('cockpitLiveTripStrip');
             if (liveStrip) {
-              liveStrip.textContent = `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)} • ${sum.kml > 0 ? sum.kml.toFixed(1) + ' km/L' : '--'}`;
+              const tankTxt = typeof m.tankPct === 'number' ? ` • ⛽ ${m.tankPct}%` : '';
+              liveStrip.textContent = `Trajeto: ${sum.distKm.toFixed(1)} km • ${sum.totalMin.toFixed(0)} min • R$ ${(sum.liters * price).toFixed(2)} • ${sum.kml > 0 ? sum.kml.toFixed(1) + ' km/L' : '--'}${tankTxt}`;
             }
             const pTherm = document.getElementById('pillThermostat');
             const pStft = document.getElementById('pillStft');
@@ -3191,7 +3343,7 @@
 
       const systems = [
         { name: '1. Elétrica & Módulo ECU', ok: ecuV === '--' || parseFloat(ecuV) >= 11.8, info: `Pino 16: ${atrv} • ECU: ${ecuV}V` },
-        { name: '2. Injeção & Falhas (03/07)', ok: dtcs.length === 0, info: dtcs.length ? `Falhas: ${dtcs.join(', ')}` : `0 falhas • MIL ${b01 && (b01[0] & 0x80) ? 'ACESA' : 'Apagada'}` },
+        { name: '2. Injeção & Falhas (03/07)', ok: dtcs.length === 0, info: dtcs.length ? `Falhas: ${dtcs.map(translateDtc).join('; ')}` : `0 falhas • MIL ${b01 && (b01[0] & 0x80) ? 'ACESA' : 'Apagada'}` },
         { name: '3. Mistura & Sonda Wideband', ok: stft === '--' || Math.abs(parseFloat(stft)) <= 10, info: `STFT: ${stft}% • λReal: ${lamR} (${wbMa} mA) / λAlvo: ${lamC}` },
         { name: '4. Ignição & Admissão (R18A1)', ok: true, info: `Avanço: ${tim}° • MAP: ${b0B?.[0] ?? '--'} kPa • MAF: ${maf} g/s • Baro: ${b33?.[0] ?? '--'} kPa` },
         { name: '5. Corpo Borboleta & Pedal', ok: true, info: `TPS: ${tps}% • Pedal D: ${ped}% • Atuador: ${act}%` },
@@ -3235,6 +3387,97 @@
       updatePowerButtonsUi();
       renderMatrix();
       startGpsAlwaysOn();
+
+      document.getElementById('btnGpsOnlyMode')?.addEventListener('click', () => {
+        if (appState.gpsOnlyRunning) {
+          clearInterval(appState.gpsOnlyTimer);
+          appState.gpsOnlyTimer = null;
+          appState.gpsOnlyRunning = false;
+          closeActiveTrip('Modo Só GPS encerrado');
+          const b = document.getElementById('btnGpsOnlyMode');
+          if (b) { b.textContent = '📍 Só GPS'; b.className = 'px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-bold'; }
+        } else {
+          if (appState.liveRunning) return showToast('Já está conectado ao scanner OBD-II!');
+          appState.gpsOnlyRunning = true;
+          const sess = startNewSession('Modo Só GPS');
+          sess.isGpsOnly = true;
+          document.getElementById('btnEndTripNow')?.classList.remove('hidden');
+          const b = document.getElementById('btnGpsOnlyMode');
+          if (b) { b.textContent = '⏹️ Parar GPS'; b.className = 'px-2.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold'; }
+          showToast('📍 Modo Só GPS iniciado! Abra o Mapa HUD quando quiser.');
+          appState.gpsOnlyTimer = setInterval(() => {
+            if (!appState.gpsOnlyRunning || !appState.gps?.lat) return;
+            const cur = getCurrentSession();
+            if (!cur) return;
+            const spd = appState.gps.spd || 0;
+            cur.endedAt = new Date().toISOString();
+            cur.rows.push({
+              ts: cur.endedAt, rpm: 0, speed: spd, fuelLh: 0, fuelKml: 0,
+              lat: appState.gps.lat, lon: appState.gps.lon, gpsSpeedKmh: spd
+            });
+            document.getElementById('mSpeed').textContent = Math.round(spd);
+            document.getElementById('mGpsSpeed').textContent = `GPS: ${spd} km/h`;
+            document.getElementById('mSamples').textContent = `${cur.rows.length} pts`;
+            const sum = summarizeSession(cur);
+            const strip = document.getElementById('cockpitLiveTripStrip');
+            if (strip) strip.textContent = `Só GPS: ${sum.distKm.toFixed(2)} km • ${sum.totalMin.toFixed(0)} min • ${sum.stops} paradas`;
+            if (cur.rows.length % 3 === 0) saveSessions();
+            if (appState.hudOpen) renderHudMap();
+          }, 2000);
+        }
+      });
+
+      document.getElementById('btnToggleVoiceAlerts')?.addEventListener('click', () => {
+        appState.voiceAlerts = !appState.voiceAlerts;
+        updatePowerButtonsUi();
+        if (appState.voiceAlerts) speakAlert('test_voice', 'Alertas por voz ativados.', 1000);
+        showToast(appState.voiceAlerts ? '🔊 Alertas por voz ativados.' : '🔇 Alertas por voz desativados.');
+      });
+
+      document.getElementById('btnImportBackup')?.addEventListener('click', () => {
+        document.getElementById('importBackupFileInput')?.click();
+      });
+      document.getElementById('importBackupFileInput')?.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const data = JSON.parse(await file.text());
+          let addedTrips = 0, addedRefs = 0;
+          if (Array.isArray(data.allVehicles)) {
+            const vIds = new Set(appState.vehicles.map((v) => v.id));
+            for (const v of data.allVehicles) if (v?.id && !vIds.has(v.id)) appState.vehicles.push(v);
+            saveVehicles();
+          }
+          if (Array.isArray(data.knownPlaces)) {
+            const pNames = new Set(appState.knownPlaces.map((p) => p.name.toLowerCase()));
+            for (const p of data.knownPlaces) if (p?.name && !pNames.has(p.name.toLowerCase())) appState.knownPlaces.push(p);
+            saveKnownPlaces();
+          }
+          if (Array.isArray(data.refuels)) {
+            const rIds = new Set(appState.refuels.map((r) => r.id));
+            for (const r of data.refuels) if (r?.id && !rIds.has(r.id)) { appState.refuels.push(r); addedRefs++; }
+            appState.refuels.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+            saveRefuels();
+          }
+          if (Array.isArray(data.sessions)) {
+            const sIds = new Set(appState.sessions.map((s) => s.id));
+            for (const s of data.sessions) {
+              if (s?.id && !sIds.has(s.id)) {
+                await idbPutTrip(s);
+                appState.sessions.push(s);
+                addedTrips++;
+              }
+            }
+            appState.sessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+            renderAllSessionViews();
+          }
+          showToast(`✅ Backup restaurado: +${addedTrips} viagens e +${addedRefs} abastecimentos!`);
+        } catch (err) {
+          showToast('❌ Arquivo de backup inválido.');
+        } finally {
+          e.target.value = '';
+        }
+      });
 
       document.getElementById('btnEndTripNow')?.addEventListener('click', () => {
         closeActiveTrip('Viagem encerrada manualmente');
@@ -3317,7 +3560,7 @@
         const val = prompt('Informe o odômetro (km) da troca de óleo / revisão:', est ? String(est) : '');
         const km = parseFloat((val || '').replace(',', '.'));
         if (!km || isNaN(km)) return;
-        localStorage.setItem('openobd_oil_last_km', String(Math.round(km)));
+        localStorage.setItem(`openobd_oil_last_km_${getActiveVehicleId()}`, String(Math.round(km)));
         renderMaintenanceCard();
         showToast(`Troca registrada em ${Math.round(km).toLocaleString('pt-BR')} km!`);
       });
@@ -3436,7 +3679,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '1.3.0',
+          version: '1.4.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,

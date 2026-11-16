@@ -4,6 +4,17 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v1.4.0] - 2026-11-15
+### Adicionado
+- **Isolamento Real Multi-Veículo**: Viagens, abastecimentos, médias, gráficos, revisão de óleo e odômetro filtrados automaticamente pelo veículo ativo (`vehicleId`).
+- **Restaurar Backup JSON (`📥 Restaurar Backup`)**: Importação segura com merge no IndexedDB (`obd_trips_db`), veículos, locais conhecidos e abastecimentos sem duplicação.
+- **Alertas por Voz ao Dirigir (`🔊 Voz: ON/OFF`)**: Avisos falados via `speechSynthesis` (pt-BR) para temperatura crítica (`>= 102°C`), alternador fora da faixa (`< 13.0V` / `> 14.9V`) e motor aquecido a `80°C`.
+- **Dicionário Offline de DTCs em Português + Nível do Tanque (`PID 012F`)**: Tradução de códigos `P0xxx` no check-up e exibição opcional da % do tanque na barra ao vivo.
+- **Modo Só GPS (`📍 Só GPS`)**: Gravação de trajeto, velocidade GPS e Mapa HUD mesmo sem o scanner OBD-II conectado, sem contaminar médias de combustível.
+- **Raio-X de Gastos (`Parado vs Urbano vs Rodovia`)**: Quebra percentual e financeira (R$) por faixa de velocidade na aba `📊 Custos`.
+
+---
+
 ## [v1.3.0] - 2026-11-15
 ### Adicionado & Corrigido
 - **Encerramento Real de Viagem ao Tirar a Chave**:
