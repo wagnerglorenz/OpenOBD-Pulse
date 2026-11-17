@@ -4,6 +4,12 @@ Todas as alterações notáveis deste projeto serão documentadas neste arquivo,
 
 ---
 
+## [v2.2.0] - 2026-11-17
+### Adicionado
+- **10 Perfis Térmicos Específicos por Família de Motor (`THERMAL_PROFILES`)**: Honda R18/i-VTEC, VW EA111, VW EA211 TSI, GM Onix/Tracker, Fiat Firefly/GSE, Toyota Dual VVT-i, Hyundai Kappa, Ford Dragon, Renault K4M/SCe e Jeep E-TorQ/T270 com seleção automática ou manual no cadastro de veículos.
+
+---
+
 ## [v2.1.0] - 2026-11-16
 ### Adicionado & Otimizado
 - **100% Offline Real (`sw.js`)**: Service Worker pré-armazena e mantém em cache também Tailwind CSS e Leaflet JS/CSS (inclusive respostas cross-origin/opaque) para abrir sem internet em subsolos/garagens.

@@ -1,9 +1,9 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "minCompatibleVersion": "1.0.0",
   "schemaVersion": 2,
   "minCompatibleSchema": 1,
   "requiresReinstall": false,
   "downloadUrl": "https://wagnerglorenz.github.io/OpenOBD-Pulse/",
-  "notes": "Offline real (CSS/Mapa em cache), Mapa HUD incremental, loop OBD acelerado por PIDs e compartilhamento de perfil do carro."
+  "notes": "10 perfis térmicos específicos por família de motor (Honda, VW EA111/TSI, GM, Fiat, Toyota, Hyundai, Ford, Renault, Jeep)."
 }

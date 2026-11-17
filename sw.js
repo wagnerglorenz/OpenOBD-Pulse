@@ -1,4 +1,4 @@
-const CACHE_NAME = 'openobd-pulse-v12';
+const CACHE_NAME = 'openobd-pulse-v13';
 const ASSETS = [
   './',
   './index.html',

@@ -234,9 +234,16 @@
           <label for="vehThermalProfile" class="text-[10px] text-orange-300 uppercase font-bold block">Perfil Térmico do Motor (Água)</label>
           <select id="vehThermalProfile" class="w-full mt-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400">
             <option value="AUTO" selected>Automático (detectar pela Marca/Modelo)</option>
-            <option value="HONDA">Honda i-VTEC / R18 (Ideal 82–105°C • Alerta 108°C)</option>
-            <option value="TURBO">VW TSI / GM Turbo / Ecotec (Ideal 85–104°C • Alerta 108°C)</option>
-            <option value="ASPIRADO">Aspirado Padrão — VW EA111/Fiat/Toyota/Ford (Ideal 82–98°C • Alerta 104°C)</option>
+            <option value="HONDA">Honda R18 / i-VTEC (Ideal 82–105°C • Alerta 108°C)</option>
+            <option value="VW_EA111">VW EA111 Gol/Fox/Polo (Ideal 82–98°C • Alerta 104°C)</option>
+            <option value="VW_TSI">VW EA211 TSI Turbo (Ideal 85–104°C • Alerta 108°C)</option>
+            <option value="GM_TURBO">GM Onix / Tracker / Cruze (Ideal 85–105°C • Alerta 108°C)</option>
+            <option value="FIAT_FIREFLY">Fiat Firefly / GSE (Ideal 80–98°C • Alerta 104°C)</option>
+            <option value="TOYOTA">Toyota Corolla / Yaris / Etios (Ideal 82–98°C • Alerta 105°C)</option>
+            <option value="HYUNDAI">Hyundai HB20 / Creta (Ideal 82–95°C • Alerta 104°C)</option>
+            <option value="FORD_DRAGON">Ford Ka / EcoSport Dragon (Ideal 85–105°C • Alerta 108°C)</option>
+            <option value="RENAULT_K4M">Renault Sandero / Logan / Duster (Ideal 89–101°C • Alerta 106°C)</option>
+            <option value="JEEP">Jeep Renegade / Compass (Ideal 85–102°C • Alerta 107°C)</option>
           </select>
         </div>
 
@@ -1535,7 +1542,16 @@
     }
 
     const THERMAL_PROFILES = {
-      HONDA: { label: 'Honda i-VTEC', minIdeal: 82, maxIdeal: 105, warnNearMax: 108, criticalMax: 112, fanRange: '105–107°C' },
+      HONDA: { label: 'Honda R18 / i-VTEC', minIdeal: 82, maxIdeal: 105, warnNearMax: 108, criticalMax: 112, fanRange: '105–107°C' },
+      VW_EA111: { label: 'VW EA111', minIdeal: 82, maxIdeal: 98, warnNearMax: 104, criticalMax: 108, fanRange: '97–102°C' },
+      VW_TSI: { label: 'VW EA211 TSI', minIdeal: 85, maxIdeal: 104, warnNearMax: 108, criticalMax: 112, fanRange: '98–102°C' },
+      GM_TURBO: { label: 'GM Onix / Tracker', minIdeal: 85, maxIdeal: 105, warnNearMax: 108, criticalMax: 112, fanRange: '98–105°C' },
+      FIAT_FIREFLY: { label: 'Fiat Firefly / GSE', minIdeal: 80, maxIdeal: 98, warnNearMax: 104, criticalMax: 108, fanRange: '96–98°C' },
+      TOYOTA: { label: 'Toyota Dual VVT-i', minIdeal: 82, maxIdeal: 98, warnNearMax: 105, criticalMax: 110, fanRange: '95–102°C' },
+      HYUNDAI: { label: 'Hyundai Kappa / Smartstream', minIdeal: 82, maxIdeal: 95, warnNearMax: 104, criticalMax: 108, fanRange: '95–98°C' },
+      FORD_DRAGON: { label: 'Ford Dragon 3 cil.', minIdeal: 85, maxIdeal: 105, warnNearMax: 108, criticalMax: 112, fanRange: '97–105°C' },
+      RENAULT_K4M: { label: 'Renault K4M / SCe', minIdeal: 89, maxIdeal: 101, warnNearMax: 106, criticalMax: 110, fanRange: '98–104°C' },
+      JEEP: { label: 'Jeep E-TorQ / T270', minIdeal: 85, maxIdeal: 102, warnNearMax: 107, criticalMax: 110, fanRange: '97–105°C' },
       TURBO: { label: 'Turbo / TSI / Ecotec', minIdeal: 85, maxIdeal: 104, warnNearMax: 108, criticalMax: 112, fanRange: '98–104°C' },
       ASPIRADO: { label: 'Aspirado Padrão', minIdeal: 82, maxIdeal: 98, warnNearMax: 104, criticalMax: 108, fanRange: '96–101°C' },
       UNIVERSAL: { label: 'Universal', minIdeal: 80, maxIdeal: 102, warnNearMax: 106, criticalMax: 110, fanRange: '97–104°C' }
@@ -1547,15 +1563,16 @@
         return THERMAL_PROFILES[v.thermalProfile];
       }
       const txt = `${v.brand || ''} ${v.model || ''} ${v.nickname || ''}`.toLowerCase();
-      if (txt.includes('honda') || txt.includes('civic') || txt.includes('fit') || txt.includes('city') || txt.includes('hr-v')) {
-        return THERMAL_PROFILES.HONDA;
-      }
-      if (txt.includes('tsi') || txt.includes('turbo') || txt.includes('onix') || txt.includes('tracker') || txt.includes('cruze') || txt.includes('ecotec')) {
-        return THERMAL_PROFILES.TURBO;
-      }
-      if (txt.includes('vw') || txt.includes('volkswagen') || txt.includes('fiat') || txt.includes('toyota') || txt.includes('ford') || txt.includes('hyundai') || txt.includes('renault')) {
-        return THERMAL_PROFILES.ASPIRADO;
-      }
+      if (txt.includes('honda') || txt.includes('civic') || txt.includes('fit') || txt.includes('city') || txt.includes('hr-v')) return THERMAL_PROFILES.HONDA;
+      if (txt.includes('tsi') || txt.includes('nivus') || txt.includes('t-cross') || txt.includes('virtus')) return THERMAL_PROFILES.VW_TSI;
+      if (txt.includes('onix') || txt.includes('tracker') || txt.includes('cruze') || txt.includes('chevrolet')) return THERMAL_PROFILES.GM_TURBO;
+      if (txt.includes('vw') || txt.includes('volkswagen') || txt.includes('gol') || txt.includes('fox') || txt.includes('voyage')) return THERMAL_PROFILES.VW_EA111;
+      if (txt.includes('fiat') || txt.includes('argo') || txt.includes('cronos') || txt.includes('mobi') || txt.includes('strada') || txt.includes('pulse')) return THERMAL_PROFILES.FIAT_FIREFLY;
+      if (txt.includes('toyota') || txt.includes('corolla') || txt.includes('yaris') || txt.includes('etios')) return THERMAL_PROFILES.TOYOTA;
+      if (txt.includes('hyundai') || txt.includes('hb20') || txt.includes('creta')) return THERMAL_PROFILES.HYUNDAI;
+      if (txt.includes('ford') || txt.includes('ka') || txt.includes('ecosport')) return THERMAL_PROFILES.FORD_DRAGON;
+      if (txt.includes('renault') || txt.includes('sandero') || txt.includes('logan') || txt.includes('duster') || txt.includes('kwid')) return THERMAL_PROFILES.RENAULT_K4M;
+      if (txt.includes('jeep') || txt.includes('renegade') || txt.includes('compass')) return THERMAL_PROFILES.JEEP;
       return THERMAL_PROFILES.UNIVERSAL;
     }
 
@@ -4299,7 +4316,7 @@
       );
     }
 
-    const APP_VERSION = '2.1.0';
+    const APP_VERSION = '2.2.0';
     const LOCAL_SCHEMA_VERSION = 2;
     let swRegistrationRef = null;
 
@@ -4870,7 +4887,7 @@
         const activeVeh = getActiveVehicle();
         const payload = {
           app: 'OpenOBD Pulse',
-          version: '2.1.0',
+          version: '2.2.0',
           exportedAt: new Date().toISOString(),
           vehicle: activeVeh,
           allVehicles: appState.vehicles,
